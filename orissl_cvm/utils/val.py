@@ -29,7 +29,7 @@ Significant parts of our code are based on [Nanne's pytorch-netvlad repository]
 
 import numpy as np
 import torch
-# import faiss
+import faiss
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from orissl_cvm.datasets import ImagePairsFromList
@@ -60,9 +60,10 @@ def val(eval_set, model, encoder_dim, device, opt, config, writer, epoch_num=0, 
         qFeat_gr = np.empty((len(eval_set_queries), pool_size), dtype=np.float32)
         dbFeat_sa = np.empty((len(eval_set_dbs), pool_size), dtype=np.float32)
 
-        for feat, test_data_loader in zip([qFeat_gr, dbFeat_sa], [test_data_loader_queries, test_data_loader_dbs]):
-            for iteration, batch in \
-                    enumerate(tqdm(test_data_loader, position=pbar_position, leave=False, desc='Test Iter'.rjust(15)), 1):
+        for idx, (feat, test_data_loader) in enumerate(zip([qFeat_gr, dbFeat_sa], 
+                                [test_data_loader_queries, test_data_loader_dbs])):
+            for iteration, batch in enumerate(tqdm(test_data_loader, 
+                    position=pbar_position, leave=False, desc='Test Iter'.rjust(15)), 1):
                 if batch is None: 
                     continue
                 data_input, indices = batch
@@ -71,13 +72,14 @@ def val(eval_set, model, encoder_dim, device, opt, config, writer, epoch_num=0, 
                 # TODO: basically we want use query gr image to match the sa image in database,
                 # so for query dataloader we just need to forward gr feat, and for database 
                 # dataloader just the sa feat. Implement later
-                feat[indices.detach().numpy(), :] = encoding[0].detach().cpu().numpy()
+                feat[indices.detach().numpy(), :] = encoding[idx].detach().cpu().numpy()
 
                 del data_input, encoding
 
     del test_data_loader_queries, test_data_loader_dbs
 
     tqdm.write('====> Building faiss index')
+    # ? the following two lines make no sense right? it will be replaced later in the city's loop
     faiss_index = faiss.IndexFlatL2(pool_size)
     # noinspection PyArgumentList
     faiss_index.add(dbFeat_sa)
@@ -91,10 +93,14 @@ def val(eval_set, model, encoder_dim, device, opt, config, writer, epoch_num=0, 
     # any combination of mapillary cities will work as a val set
     qEndPosTot = 0
     dbEndPosTot = 0
+    # NOTE msls dataset's train/val/test set each contains many cities, and ofc we could construct 
+    # search tree for each city and search within the city. Dataset's qEndPosList and dbEndPosList
+    # contains a list of indices as the cuts. We kept the list usage, but it will contain only one 
+    # value. And actually the name of cityNum means nothing
     for cityNum, (qEndPos, dbEndPos) in enumerate(zip(eval_set.qEndPosList, eval_set.dbEndPosList)):
         faiss_index = faiss.IndexFlatL2(pool_size)
-        faiss_index.add(dbFeat[dbEndPosTot:dbEndPosTot+dbEndPos, :])
-        _, preds = faiss_index.search(qFeat[qEndPosTot:qEndPosTot+qEndPos, :], max(n_values))
+        faiss_index.add(dbFeat_sa[dbEndPosTot:dbEndPosTot+dbEndPos, :])
+        _, preds = faiss_index.search(qFeat_gr[qEndPosTot:qEndPosTot+qEndPos, :], max(n_values))
         if cityNum == 0:
             predictions = preds
         else:
