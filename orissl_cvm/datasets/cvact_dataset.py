@@ -82,8 +82,6 @@ class CVACTDataset(Dataset):
         self.pIdx = []
         self.nonNegIdx = []
         self.dbImages = []
-        self.sideways = []
-        self.night = []
         self.qEndPosList = []
         self.dbEndPosList = []
 
@@ -105,6 +103,7 @@ class CVACTDataset(Dataset):
         self.transform = transform
 
         # load data
+        # TODO a better way?
         data_info_path = join(sys.path[0], 'assets/CVACT_infos')
         # get len of images from cities so far for indexing
         _lenQ = len(self.qImages)
@@ -122,11 +121,11 @@ class CVACTDataset(Dataset):
 
             assert(len(keys) != 0 and len(utms) != 0)
 
-            # load query data: using all of them
+            # NOTE load query data: using all of them
             qData = {'keys': keys, 'utms': utms}
             keysQ = qData['keys']
             utmQ = qData['utms']
-            # load database data: using all of them
+            # NOTE load database data: using all of them
             dbData = {'keys': keys, 'utms': utms}
             keysDb = dbData['keys']
             utmDb = dbData['utms']
@@ -291,12 +290,6 @@ class CVACTDataset(Dataset):
                 # get query idx
                 qidx = self.qIdx[q]
 
-                # get positives
-                pidxs = self.pIdx[q]
-
-                # choose a random positive (within positive range (default 10 m))
-                pidx = np.random.choice(pidxs, size=1)[0]
-
                 # get negatives
                 while True:
                     nidxs = np.random.choice(len(self.dbImages), size=self.nNeg)
@@ -306,8 +299,8 @@ class CVACTDataset(Dataset):
                         break
 
                 # package the triplet and target
-                triplet = [qidx, pidx, *nidxs]
-                target = [-1, 1] + [0] * len(nidxs)
+                triplet = [qidx, *nidxs]
+                target = [-1] + [0] * len(nidxs)
 
                 self.triplets.append((triplet, target))
 
@@ -322,9 +315,6 @@ class CVACTDataset(Dataset):
             self.current_subset = 0
         qidxs = np.asarray(self.subcache_indices[self.current_subset])
 
-        # take their positive in the database
-        pidxs = np.unique([i for idx in self.pIdx[qidxs] for i in idx])
-
         # take m = 5*cached_queries is number of negative images
         nidxs = np.random.choice(len(self.dbImages), self.cached_negatives, replace=False)
 
@@ -334,7 +324,6 @@ class CVACTDataset(Dataset):
         # make dataloaders for query, positive and negative images
         opt = {'batch_size': self.bs, 'shuffle': False, 'num_workers': self.threads, 'pin_memory': True, 'collate_fn': ImagePairsFromList.collate_fn}
         qloader = torch.utils.data.DataLoader(ImagePairsFromList(self.root_dir, self.qImages[qidxs], transform=self.transform), **opt)
-        ploader = torch.utils.data.DataLoader(ImagePairsFromList(self.root_dir, self.dbImages[pidxs], transform=self.transform), **opt)
         nloader = torch.utils.data.DataLoader(ImagePairsFromList(self.root_dir, self.dbImages[nidxs], transform=self.transform), **opt)
 
         # calculate their descriptors
@@ -344,9 +333,6 @@ class CVACTDataset(Dataset):
             # initialize descriptors
             qvecs_gr = torch.zeros(len(qidxs), outputdim).to(self.device)
             qvecs_sa = torch.zeros(len(qidxs), outputdim).to(self.device)
-
-            pvecs_gr = torch.zeros(len(pidxs), outputdim).to(self.device)
-            pvecs_sa = torch.zeros(len(pidxs), outputdim).to(self.device)
 
             nvecs_gr = torch.zeros(len(nidxs), outputdim).to(self.device)
             nvecs_sa = torch.zeros(len(nidxs), outputdim).to(self.device)
@@ -366,14 +352,6 @@ class CVACTDataset(Dataset):
                 # NOTE: the net is expected to return a tuple (desc ground, desc satellite)
                 qvecs_gr[i * bs:(i + 1) * bs, :] = encoding[0]
                 qvecs_sa[i * bs:(i + 1) * bs, :] = encoding[1]
-            for i, batch in tqdm(enumerate(ploader), desc='compute positive descriptors', total=len(pidxs) // bs,
-                                 position=2, leave=False):
-                if batch is None: 
-                    continue
-                X, y = batch
-                encoding = net(*[x.to(self.device) for x in X])
-                pvecs_gr[i * bs:(i + 1) * bs, :] = encoding[0]
-                pvecs_sa[i * bs:(i + 1) * bs, :] = encoding[1]
             for i, batch in tqdm(enumerate(nloader), desc='compute negative descriptors', total=len(nidxs) // bs,
                                  position=2, leave=False):
                 if batch is None:
@@ -386,15 +364,12 @@ class CVACTDataset(Dataset):
         tqdm.write('>> Searching for hard negatives...')
         # compute dot product scores and ranks on GPU
         # NOTE: current strategy to calculate score between samples (each sample is a pair)
-        pScores = torch.mm(qvecs_gr, pvecs_sa.t()) + torch.mm(qvecs_sa, pvecs_gr.t()) / 2
-        pScores, pRanks = torch.sort(pScores, dim=1, descending=True)
 
         # calculate distance between query and negatives
         nScores = torch.mm(qvecs_gr, nvecs_sa.t()) + torch.mm(qvecs_sa, nvecs_gr.t()) / 2
         nScores, nRanks = torch.sort(nScores, dim=1, descending=True)
 
         # convert to cpu and numpy
-        pScores, pRanks = pScores.cpu().numpy(), pRanks.cpu().numpy()
         nScores, nRanks = nScores.cpu().numpy(), nRanks.cpu().numpy()
 
         # selection of hard triplets
@@ -402,16 +377,9 @@ class CVACTDataset(Dataset):
 
             qidx = qidxs[q]
 
-            # find positive idx for this query (cache idx domain)
-            # np.in1d: Test whether each element of a 1-D array is also present in a second array
-            cached_pidx = np.where(np.in1d(pidxs, self.pIdx[qidx]))
-
-            # find idx of positive idx in rank matrix (descending cache idx domain)
-            pidx = np.where(np.in1d(pRanks[q, :], cached_pidx))
-
-            # take the closest positve
-            dPos = pScores[q, pidx][0][0]
-
+            # take the score with itself 
+            dPos = np.sum((qvecs_gr[q] * qvecs_sa[q]).cpu().numpy())
+            
             # get distances to all negatives
             dNeg = nScores[q, :]
 
@@ -429,17 +397,13 @@ class CVACTDataset(Dataset):
             # select the hardest negatives
             cached_hardestNeg = nRanks[q, hardest_negIdx]
 
-            # select the closest positive (back to cache idx domain)
-            cached_pidx = pRanks[q, pidx][0][0]
-
             # transform back to original index (back to original idx domain)
             qidx = self.qIdx[qidx]
-            pidx = pidxs[cached_pidx]
             hardestNeg = nidxs[cached_hardestNeg]
 
             # package the triplet and target
-            triplet = [qidx, pidx, *hardestNeg]
-            target = [-1, 1] + [0] * len(hardestNeg)
+            triplet = [qidx, *hardestNeg]
+            target = [-1] + [0] * len(hardestNeg)
 
             self.triplets.append((triplet, target))
 
@@ -452,12 +416,10 @@ class CVACTDataset(Dataset):
 
         # get query, positive and negative idx
         qidx = triplet[0]
-        pidx = triplet[1]
-        nidx = triplet[2:]
+        nidx = triplet[1:]
 
         keys = {}
         keys['query'] = self.qImages[qidx]
-        keys['positive'] = self.dbImages[pidx]
         keys['negatives'] = [self.dbImages[idx] for idx in nidx]
 
         # load images into triplet list
@@ -465,10 +427,6 @@ class CVACTDataset(Dataset):
             query_gr = self.transform(Image.open(join(self.gr_path, keys['query']['gr_img'])))
             query_sa = self.transform(Image.open(join(self.sa_path, keys['query']['sa_img'])))
             query = query_gr, query_sa
-
-            positive_gr = self.transform(Image.open(join(self.gr_path, keys['positive']['gr_img'])))
-            positive_sa = self.transform(Image.open(join(self.sa_path, keys['positive']['sa_img'])))
-            positive = positive_gr, positive_sa
 
             negatives_gr = [self.transform(Image.open(join(self.gr_path, k['gr_img']))) 
                             for k in keys['negatives']]
@@ -483,7 +441,7 @@ class CVACTDataset(Dataset):
             # https://stackoverflow.com/a/23575424 could solve it but we choose not to use it
             return None
 
-        return query, positive, negatives, [qidx, pidx] + nidx, keys
+        return query, negatives, [qidx] + nidx, keys
 
     def __len__(self):
         return len(self.triplets)
@@ -505,15 +463,11 @@ class CVACTDataset(Dataset):
         if None in batch:
             return None
 
-        query, positive, negatives, indices, keys = zip(*batch)
+        query, negatives, indices, keys = zip(*batch)
 
         query_gr = data.dataloader.default_collate([q[0] for q in query])
         query_sa = data.dataloader.default_collate([q[1] for q in query])
         query = query_gr, query_sa
-
-        positive_gr = data.dataloader.default_collate([p[0] for p in positive])
-        positive_sa = data.dataloader.default_collate([p[1] for p in positive])
-        positive = positive_gr, positive_sa
 
         negCounts = data.dataloader.default_collate([x[0].shape[0] for x in negatives])
 
@@ -530,4 +484,4 @@ class CVACTDataset(Dataset):
             'keys': keys
         }
 
-        return query, positive, negatives, meta
+        return query, negatives, meta

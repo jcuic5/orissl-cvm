@@ -209,14 +209,17 @@ if __name__ == "__main__":
     # Training
     #
     print('===> Training model')
-    model = model.to(device)
 
+    model = model.to(device)
+    # TODO: load from a model. delete it later
+    # model.load_state_dict(torch.load("work_dirs/Apr04_21-49-08_cvact_resnet50/checkpoints/a_temp_for_debug.pth"))
+    
     for epoch in trange(opt.start_epoch + 1, opt.nEpochs + 1, desc='Epoch number'.rjust(15), position=0):
 
         train_epoch(train_dataset, model, optimizer, criterion, encoder_dim, device, epoch, opt, config, writer)
 
         # TODO: delete it later
-        torch.save(model.state_dict(), join(opt.save_file_path, "a_temp_for_debug.pth"))
+        # torch.save(model.state_dict(), join(opt.save_file_path, "a_temp_for_debug.pth"))
 
         if scheduler is not None:
             scheduler.step(epoch)

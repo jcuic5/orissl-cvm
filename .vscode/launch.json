@@ -20,7 +20,7 @@
                 "--dataset_root_dir", "data/CVACT_full",
                 "--threads", "6",
                 "--gpu_ids", "6",
-                "--nEpochs", "5"
+                "--nEpochs", "30"
             ]
         }
     ]

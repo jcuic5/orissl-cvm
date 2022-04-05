@@ -32,7 +32,7 @@ import torch
 import faiss
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
-from orissl_cvm.datasets import ImagePairsFromList
+from orissl_cvm.datasets.cvact_dataset import ImagePairsFromList
 from orissl_cvm.utils.tools import input_transform
 
 

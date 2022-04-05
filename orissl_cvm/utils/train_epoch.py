@@ -83,7 +83,7 @@ def train_epoch(train_dataset, model, optimizer, criterion,
                 continue
 
             # Unwrap the batch information
-            query, positive, negatives, meta = batch
+            query, negatives, meta = batch
             negCounts, indices, keys = meta['negCounts'], meta['indices'], meta['keys']
 
             # Prepare batch for input
@@ -91,8 +91,8 @@ def train_epoch(train_dataset, model, optimizer, criterion,
             # where N = batchSize * (nQuery + nPos + nNeg)
             B = query[0].shape[0]
             nNeg = torch.sum(negCounts)
-            triplets_gr = torch.cat([query[0], positive[0], negatives[0]])
-            triplets_sa = torch.cat([query[1], positive[1], negatives[1]])
+            triplets_gr = torch.cat([query[0], negatives[0]])
+            triplets_sa = torch.cat([query[1], negatives[1]])
             data_input = [triplets_gr, triplets_sa]
 
             data_input = [x.to(device) for x in data_input]
@@ -100,8 +100,8 @@ def train_epoch(train_dataset, model, optimizer, criterion,
             # Forward
             encoding = model(*data_input)
 
-            descQ_gr, descP_gr, descN_gr = torch.split(encoding[0], [B, B, nNeg])
-            descQ_sa, descP_sa, descN_sa = torch.split(encoding[1], [B, B, nNeg])
+            descQ_gr, descN_gr = torch.split(encoding[0], [B, nNeg])
+            descQ_sa, descN_sa = torch.split(encoding[1], [B, nNeg])
             optimizer.zero_grad()
 
             # calculate loss for each Query, Positive, Negative triplet
@@ -111,14 +111,14 @@ def train_epoch(train_dataset, model, optimizer, criterion,
             for i, negCount in enumerate(negCounts):
                 for n in range(negCount):
                     negIx = (torch.sum(negCounts[:i]) + n).item()
-                    loss += criterion(descQ_gr[i: i + 1], descP_sa[i: i + 1], descN_sa[negIx:negIx + 1])
-                    loss += criterion(descQ_sa[i: i + 1], descP_gr[i: i + 1], descN_gr[negIx:negIx + 1])
+                    loss += criterion(descQ_gr[i: i + 1], descQ_sa[i: i + 1], descN_sa[negIx:negIx + 1])
+                    loss += criterion(descQ_sa[i: i + 1], descQ_gr[i: i + 1], descN_gr[negIx:negIx + 1])
 
             loss /= nNeg.float().to(device)  # normalise by actual number of negatives
             loss.backward()
             optimizer.step()
-            del data_input, encoding, descQ_gr, descP_gr, descN_gr, descQ_sa, descP_sa, descN_sa
-            del query, positive, negatives
+            del data_input, encoding, descQ_gr, descN_gr, descQ_sa, descN_sa
+            del query, negatives
 
             batch_loss = loss.item()
             epoch_loss += batch_loss
