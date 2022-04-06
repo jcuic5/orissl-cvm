@@ -46,7 +46,7 @@ def get_backend():
     enc_dim = 512
     enc = models.vgg16(pretrained=True)
     layers = list(enc.features.children())[:-2]
-    # NOTE: optional
+    # NOTE: optionally freeze part of the backbone
     # only train conv5_1, conv5_2, and conv5_3 (leave rest same as Imagenet trained weights)
     # for layer in layers[:-5]:
     #     for p in layer.parameters():

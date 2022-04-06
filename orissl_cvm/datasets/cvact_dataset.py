@@ -68,7 +68,7 @@ class ImagePairsFromList(Dataset):
 class CVACTDataset(Dataset):
     def __init__(self, root_dir, mode='train', nNeg=5, transform=None, posDistThr=15, 
                  negDistThr=100, cached_queries=1000, cached_negatives=1000, 
-                 positive_sampling=True, bs=24, threads=8, margin=0.1):
+                 positive_sampling=True, bs=32, threads=6, margin=0.1):
 
         # initializing
         assert mode in ('train', 'val', 'test')
@@ -104,7 +104,7 @@ class CVACTDataset(Dataset):
 
         # load data
         # TODO a better way?
-        data_info_path = join(sys.path[0], 'assets/CVACT_infos')
+        data_info_path = join(sys.path[0], 'assets/CVACT_infos_mini')
         # get len of images from cities so far for indexing
         _lenQ = len(self.qImages)
         _lenDb = len(self.dbImages)
@@ -265,6 +265,33 @@ class CVACTDataset(Dataset):
         # reset subset counter
         self.current_subset = 0
 
+    def update_subcache_vanilla(self):
+        qidxs = np.random.choice(len(self.qIdx), self.cached_queries, replace=False)
+
+        for q in qidxs:
+
+            # get query idx
+            qidx = self.qIdx[q]
+
+            # get negatives
+            while True:
+                nidxs = np.random.choice(len(self.dbImages), size=self.nNeg)
+
+                # ensure that non of the choice negative images are within the negative range (default 25 m)
+                if sum(np.in1d(nidxs, self.nonNegIdx[q])) == 0:
+                    break
+
+            # package the triplet and target
+            triplet = [qidx, *nidxs]
+            target = [-1] + [0] * len(nidxs)
+
+            self.triplets.append((triplet, target))
+
+        # increment subset counter
+        self.current_subset += 1
+
+        return
+
     def update_subcache(self, net=None, outputdim=None):
         """Prepare current subset's triplets (subcache)
 
@@ -283,30 +310,7 @@ class CVACTDataset(Dataset):
         # Instead we just create some naive triplets based on distance.
         # NOTE: in this case, the prepared subcache_indices is not utilized
         if net is None:
-            qidxs = np.random.choice(len(self.qIdx), self.cached_queries, replace=False)
-
-            for q in qidxs:
-
-                # get query idx
-                qidx = self.qIdx[q]
-
-                # get negatives
-                while True:
-                    nidxs = np.random.choice(len(self.dbImages), size=self.nNeg)
-
-                    # ensure that non of the choice negative images are within the negative range (default 25 m)
-                    if sum(np.in1d(nidxs, self.nonNegIdx[q])) == 0:
-                        break
-
-                # package the triplet and target
-                triplet = [qidx, *nidxs]
-                target = [-1] + [0] * len(nidxs)
-
-                self.triplets.append((triplet, target))
-
-            # increment subset counter
-            self.current_subset += 1
-
+            self.update_subcache_vanilla()
             return
 
         # take n query images

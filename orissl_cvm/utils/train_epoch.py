@@ -60,12 +60,17 @@ def train_epoch(train_dataset, model, optimizer, criterion,
 
         tqdm.write('====> Building Cache')
         # Prepare current triplets (subset, subcache) in the dataset 
-        train_dataset.update_subcache(model, pool_size)
+        train_dataset.update_subcache()
+        # train_dataset.update_subcache(model, pool_size)
 
         # Dataloader
-        training_data_loader = DataLoader(dataset=train_dataset, num_workers=opt.threads,
-                                          batch_size=int(config['train']['batchsize']), shuffle=True,
-                                          collate_fn=CVACTDataset.collate_fn, pin_memory=cuda)
+        training_data_loader = DataLoader(dataset=train_dataset, 
+                                          num_workers=opt.threads,
+                                          batch_size=int(config['train']['batchsize']), 
+                                          # NOTE doesn't matter I think, since only one epoch will be launched on this subset
+                                          shuffle=False,
+                                          collate_fn=CVACTDataset.collate_fn, 
+                                          pin_memory=cuda)
 
         tqdm.write('Allocated: ' + humanbytes(torch.cuda.memory_allocated()))
         tqdm.write('Cached:    ' + humanbytes(torch.cuda.memory_reserved()))

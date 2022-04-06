@@ -140,8 +140,7 @@ if __name__ == "__main__":
     # If DataParallel
     isParallel = False
     if int(config['global_params']['nGPU']) > 1 and torch.cuda.device_count() > 1:
-        model.encoder = nn.DataParallel(model.encoder)
-        model.pool = nn.DataParallel(model.pool)
+        model = nn.DataParallel(model)
         isParallel = True
 
     # Optimizer and scheduler
@@ -161,6 +160,8 @@ if __name__ == "__main__":
                                               gamma=float(config['train']['lrgamma']))
     else:
         raise ValueError('Unknown optimizer: ' + config['train']['optim'])
+    
+    model = model.to(device)
 
     if opt.resume_path:
         optimizer.load_state_dict(checkpoint['optimizer'])
@@ -168,9 +169,8 @@ if __name__ == "__main__":
     # Loss
     criterion = nn.TripletMarginLoss(margin=float(config['train']['margin']) ** 0.5, p=2, reduction='sum').to(device)
 
-    # Dataset (and no dataloader now)
+    # Dataset (no dataloader now)
     print('===> Loading dataset(s)')
-    exlude_panos_training = not config['train'].getboolean('includepanos')
     train_dataset = CVACTDataset(opt.dataset_root_dir, 
                                  mode='train', 
                                  nNeg=int(config['train']['nNeg']), 
@@ -210,10 +210,9 @@ if __name__ == "__main__":
     #
     print('===> Training model')
 
-    model = model.to(device)
     # TODO: load from a model. delete it later
     # model.load_state_dict(torch.load("work_dirs/Apr04_21-49-08_cvact_resnet50/checkpoints/a_temp_for_debug.pth"))
-    
+
     for epoch in trange(opt.start_epoch + 1, opt.nEpochs + 1, desc='Epoch number'.rjust(15), position=0):
 
         train_epoch(train_dataset, model, optimizer, criterion, encoder_dim, device, epoch, opt, config, writer)
