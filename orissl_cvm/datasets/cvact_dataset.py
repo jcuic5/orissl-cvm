@@ -12,27 +12,6 @@ import random
 from tqdm import tqdm
 
 
-class ImagesFromList(Dataset): #! deprecated
-    def __init__(self, images, transform):
-        self.images = np.asarray(images)
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.images)
-
-    def __getitem__(self, idx):
-        try:
-            img = [Image.open(im) for im in self.images[idx].split(",")]
-        except:
-            img = [Image.open(self.images[0])]
-        img = [self.transform(im) for im in img]
-
-        if len(img) == 1:
-            img = img[0]
-
-        return img, idx
-
-
 class ImagePairsFromList(Dataset):
     def __init__(self, root_dir, images, transform):
         self.root_dir = root_dir
@@ -47,16 +26,10 @@ class ImagePairsFromList(Dataset):
 
     def __getitem__(self, idx):
         try:
-            img_gr = [Image.open(join(self.gr_path, im)) for im in self.images[idx]['gr_img']]
-            img_sa = [Image.open(join(self.sa_path, im)) for im in self.images[idx]['sa_img']]
+            img_gr = self.transform(Image.open(join(self.gr_path, self.images[idx]['gr_img'])))
+            img_sa = self.transform(Image.open(join(self.sa_path, self.images[idx]['sa_img'])))
         except:
             return None
-        img_gr = [self.transform(im) for im in img_gr]
-        img_sa = [self.transform(im) for im in img_sa]
-
-        if len(img_gr) == 1 or len(img_sa) == 1:
-            img_gr = img_gr[0]
-            img_sa = img_sa[0]
 
         return (img_gr, img_sa), idx
 
@@ -95,7 +68,7 @@ class CVACTDataset(Dataset):
         self.transform = transform
 
         # load data # TODO a better way?
-        data_info_path = join(sys.path[0], 'assets/CVACT_infos_tiny')
+        data_info_path = join(sys.path[0], 'assets/CVACT_infos')
 
         # when GPS / UTM is available
         if self.mode in ['train', 'val']:

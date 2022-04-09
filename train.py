@@ -192,13 +192,14 @@ if __name__ == "__main__":
     # NOTE visualize batches for debug
     # visualize_dataloader(training_data_loader)
 
-    # validation_dataset = CVACTDataset(opt.dataset_root_dir, 
-    #                                   mode='val', 
-    #                                   transform=input_transform(),
-    #                                 #   posDistThr=25)
-    #                                   threads=opt.threads,
-    #                                   margin=float(config['train']['margin']))
-    validation_dataset = train_dataset
+    validation_dataset = CVACTDataset(opt.dataset_root_dir, 
+                                      mode='val', 
+                                      transform=input_transform(),
+                                    #   posDistThr=25)
+                                      threads=opt.threads,
+                                      margin=float(config['train']['margin']))
+    # NOTE for debug, use train set it self to validate
+    # validation_dataset = train_dataset
 
     print('===> Training query set:', len(train_dataset.qIdx))
     print('===> Evaluating on val set, query count:', len(validation_dataset.qIdx))
@@ -227,7 +228,7 @@ if __name__ == "__main__":
 
     for epoch in trange(opt.start_epoch + 1, opt.nEpochs + 1, desc='Epoch number'.rjust(15), position=0):
 
-        # train_epoch(train_dataset, training_data_loader, model, optimizer, criterion, encoder_dim, device, epoch, opt, config, writer)
+        train_epoch(train_dataset, training_data_loader, model, optimizer, criterion, desc_dim, device, epoch, opt, config, writer)
 
         # TODO: delete it later
         # torch.save(model.state_dict(), join(opt.save_file_path, "a_temp_for_debug.pth"))

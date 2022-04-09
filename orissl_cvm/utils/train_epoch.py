@@ -49,50 +49,50 @@ def train_epoch(train_dataset, training_data_loader, model,
                                             position=1, 
                                             leave=False, 
                                             desc='Train Iter'.rjust(15))):
-        for i in range(100):
-            # in case we get an empty batch
-            if batch is None:
-                continue
+        # in case we get an empty batch
+        if batch is None:
+            tqdm.write('====> Batch data iteration is None. Probably caused by corrupted file')
+            continue
 
-            # unwrap the batch information
-            query, meta = batch
-            indices, keys, qpn_mat = meta['indices'], meta['keys'], meta['qpn_mat']
-            B = query[0].shape[0]
-            data_input = [x.to(device) for x in list(query)]
-            qpn_mat = torch.from_numpy(qpn_mat).to(device)
+        # unwrap the batch information
+        query, meta = batch
+        indices, keys, qpn_mat = meta['indices'], meta['keys'], meta['qpn_mat']
+        B = query[0].shape[0]
+        data_input = [x.to(device) for x in list(query)]
+        qpn_mat = torch.from_numpy(qpn_mat).to(device)
 
-            # forward
-            descQ_gr, descQ_sa = model(*data_input)
+        # forward
+        descQ_gr, descQ_sa = model(*data_input)
 
-            # if i % 50 == 0:
-                # visualize_desc(descQ_gr, descQ_sa)
+        # if i % 50 == 0:
+            # visualize_desc(descQ_gr, descQ_sa)
 
-            # calculate loss, back propagate, update weights
-            optimizer.zero_grad()
-            loss = 0
-            qn_triplets = torch.nonzero(qpn_mat == 0, as_tuple=False)
-            nTriplets = qn_triplets.shape[0]
-            for i in range(nTriplets):
-                qidx, nidx = qn_triplets[i][0].item(), qn_triplets[i][1].item()
-                loss += criterion(descQ_gr[qidx: qidx+1], descQ_sa[qidx: qidx+1], descQ_sa[nidx: nidx+1])
-                loss += criterion(descQ_sa[qidx: qidx+1], descQ_gr[qidx: qidx+1], descQ_gr[nidx: nidx+1])
-                # loss += soft_triplet_loss(descQ_gr[qidx: qidx+1], descQ_sa[qidx: qidx+1], descQ_sa[nidx: nidx+1])
-                # loss += soft_triplet_loss(descQ_sa[qidx: qidx+1], descQ_gr[qidx: qidx+1], descQ_gr[nidx: nidx+1])
-            loss /= nTriplets # normalise by actual number of negatives
-            loss.backward()
-            optimizer.step()
+        # calculate loss, back propagate, update weights
+        optimizer.zero_grad()
+        loss = 0
+        qn_triplets = torch.nonzero(qpn_mat == 0, as_tuple=False)
+        nTriplets = qn_triplets.shape[0]
+        for i in range(nTriplets):
+            qidx, nidx = qn_triplets[i][0].item(), qn_triplets[i][1].item()
+            # loss += criterion(descQ_gr[qidx: qidx+1], descQ_sa[qidx: qidx+1], descQ_sa[nidx: nidx+1])
+            # loss += criterion(descQ_sa[qidx: qidx+1], descQ_gr[qidx: qidx+1], descQ_gr[nidx: nidx+1])
+            loss += soft_triplet_loss(descQ_gr[qidx: qidx+1], descQ_sa[qidx: qidx+1], descQ_sa[nidx: nidx+1])
+            loss += soft_triplet_loss(descQ_sa[qidx: qidx+1], descQ_gr[qidx: qidx+1], descQ_gr[nidx: nidx+1])
+        loss /= nTriplets # normalise by actual number of negatives
+        loss.backward()
+        optimizer.step()
 
-            del data_input, descQ_gr, descQ_sa,
-            del query
+        del data_input, descQ_gr, descQ_sa,
+        del query
 
-            batch_loss = loss.item()
-            epoch_loss += batch_loss
+        batch_loss = loss.item()
+        epoch_loss += batch_loss
 
-            if iteration % 25 == 0 or nBatches <= 10:
-                tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch_num, iteration,
-                                                                        nBatches, batch_loss))
-                writer.add_scalar('Train/Loss', batch_loss,
-                                    ((epoch_num - 1) * nBatches) + iteration)
+        if iteration % 25 == 0 or nBatches <= 10:
+            tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch_num, iteration,
+                                                                    nBatches, batch_loss))
+            writer.add_scalar('Train/Loss', batch_loss,
+                                ((epoch_num - 1) * nBatches) + iteration)
 
     avg_loss = epoch_loss / nBatches
     tqdm.write("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch_num, avg_loss))

@@ -61,6 +61,7 @@ def val(eval_set, model, desc_dim, device, opt, config, writer, epoch_num=0, wri
         for iteration, batch in enumerate(tqdm(test_data_loader_queries, 
                 position=pbar_position, leave=False, desc='Test Iter'.rjust(15)), 1):
             if batch is None: 
+                tqdm.write('====> Batch data iteration is None. Probably caused by corrupted file')
                 continue
             data_input, indices = batch
             data_input = [x.to(device) for x in data_input]
@@ -72,11 +73,12 @@ def val(eval_set, model, desc_dim, device, opt, config, writer, epoch_num=0, wri
 
     del test_data_loader_queries
 
-    visualize_desc(torch.from_numpy(qFeat_gr), torch.from_numpy(qFeat_sa))
+    # NOTE visualize 8 samples in val set for debug
+    # visualize_desc(torch.from_numpy(qFeat_gr)[:8], torch.from_numpy(qFeat_sa)[:8])
 
     tqdm.write('====> Calculating recall @ N')
-    # n_values = [1, 5, 10, 20, 50, 100, 500]
-    n_values = [1, 2, 3, 4, 5, 6, 7, 8]
+    n_values = [1, 5, 10, 20, 50, 100]
+    # n_values = [1, 2, 3, 4, 5, 6, 7, 8] #NOTE for debug on a single 8-sample batch
 
     # for each query get those within threshold distance
     gt = eval_set.all_pos_indices

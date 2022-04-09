@@ -20,7 +20,7 @@
                 "--threads", "1",
                 "--gpu_ids", "0",
                 "--nEpochs", "100",
-                // "--resume_path", "work_dirs/Apr05_02-52-13_cvact_resnet50/checkpoints/checkpoint.pth.tar"
+                "--resume_path", "work_dirs/Apr09_16-39-34_cvact_vgg16/checkpoints/checkpoint.pth.tar"
             ]
         }
     ]
