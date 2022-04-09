@@ -30,120 +30,73 @@ Significant parts of our code are based on [Nanne's pytorch-netvlad repository]
 import torch
 from tqdm.auto import trange, tqdm
 from torch.utils.data import DataLoader
-from orissl_cvm.utils.tools import humanbytes
+from orissl_cvm.utils.tools import humanbytes, soft_triplet_loss
 from orissl_cvm.datasets.cvact_dataset import CVACTDataset
+from orissl_cvm.utils.visualize import visualize_desc
 
 
-def train_epoch(train_dataset, model, optimizer, criterion, 
-                encoder_dim, device, epoch_num, 
-                opt, config, writer):
-
-    if device.type == 'cuda':
-        cuda = True
-    else:
-        cuda = False
-
-    # Divide the dataset as subsets (by indices)
-    train_dataset.new_epoch()
-    print(f'Full num of queries: {len(train_dataset.qIdx)}')
-    print(f'Size of subsets: {train_dataset.cached_queries}')
-    print(f'Num of subsets: {len(train_dataset.subcache_indices)}')
-
-    epoch_loss = 0
-    startIter = 1  # keep track of batch iter across subsets for logging
-
-    nBatches = (len(train_dataset.qIdx) + int(config['train']['batchsize']) - 1) // int(config['train']['batchsize'])
-
-    # Iterate over subsets
-    for subIter in trange(train_dataset.nCacheSubset, desc='Cache refresh'.rjust(15), position=1):
-        pool_size = encoder_dim
-
-        tqdm.write('====> Building Cache')
-        # Prepare current triplets (subset, subcache) in the dataset 
-        train_dataset.update_subcache()
-        # train_dataset.update_subcache(model, pool_size)
-
-        # Dataloader
-        training_data_loader = DataLoader(dataset=train_dataset, 
-                                          num_workers=opt.threads,
-                                          batch_size=int(config['train']['batchsize']), 
-                                          # NOTE doesn't matter I think, since only one epoch will be launched on this subset
-                                          shuffle=False,
-                                          collate_fn=CVACTDataset.collate_fn, 
-                                          pin_memory=cuda)
-
-        tqdm.write('Allocated: ' + humanbytes(torch.cuda.memory_allocated()))
-        tqdm.write('Cached:    ' + humanbytes(torch.cuda.memory_reserved()))
-
-        model.train()
+def train_epoch(train_dataset, training_data_loader, model, 
+                optimizer, criterion, encoder_dim, device, 
+                epoch_num, opt, config, writer):
         
-        # Iterate
-        for iteration, batch in enumerate(tqdm(training_data_loader, 
-                                               position=2, 
-                                               leave=False, 
-                                               desc='Train Iter'.rjust(15)), 
-                                               startIter):
+    epoch_loss = 0
+    nBatches = (len(train_dataset.qIdx) + int(config['train']['batchsize']) - 1) // \
+                                                    int(config['train']['batchsize'])
+
+    model.train()
+    # Iterate
+    for iteration, batch in enumerate(tqdm(training_data_loader, 
+                                            position=1, 
+                                            leave=False, 
+                                            desc='Train Iter'.rjust(15))):
+        for i in range(100):
             # in case we get an empty batch
             if batch is None:
                 continue
 
-            # Unwrap the batch information
-            query, negatives, meta = batch
-            negCounts, indices, keys = meta['negCounts'], meta['indices'], meta['keys']
-
-            # Prepare batch for input
-            # some reshaping to put query, pos, negs in a single (N, 3, H, W) tensor
-            # where N = batchSize * (nQuery + nPos + nNeg)
+            # unwrap the batch information
+            query, meta = batch
+            indices, keys, qpn_mat = meta['indices'], meta['keys'], meta['qpn_mat']
             B = query[0].shape[0]
-            nNeg = torch.sum(negCounts)
-            triplets_gr = torch.cat([query[0], negatives[0]])
-            triplets_sa = torch.cat([query[1], negatives[1]])
-            data_input = [triplets_gr, triplets_sa]
+            data_input = [x.to(device) for x in list(query)]
+            qpn_mat = torch.from_numpy(qpn_mat).to(device)
 
-            data_input = [x.to(device) for x in data_input]
+            # forward
+            descQ_gr, descQ_sa = model(*data_input)
 
-            # Forward
-            encoding = model(*data_input)
+            # if i % 50 == 0:
+                # visualize_desc(descQ_gr, descQ_sa)
 
-            descQ_gr, descN_gr = torch.split(encoding[0], [B, nNeg])
-            descQ_sa, descN_sa = torch.split(encoding[1], [B, nNeg])
+            # calculate loss, back propagate, update weights
             optimizer.zero_grad()
-
-            # calculate loss for each Query, Positive, Negative triplet
-            # due to potential difference in number of negatives have to
-            # do it per query, per negative
             loss = 0
-            for i, negCount in enumerate(negCounts):
-                for n in range(negCount):
-                    negIx = (torch.sum(negCounts[:i]) + n).item()
-                    loss += criterion(descQ_gr[i: i + 1], descQ_sa[i: i + 1], descN_sa[negIx:negIx + 1])
-                    loss += criterion(descQ_sa[i: i + 1], descQ_gr[i: i + 1], descN_gr[negIx:negIx + 1])
-
-            loss /= nNeg.float().to(device)  # normalise by actual number of negatives
+            qn_triplets = torch.nonzero(qpn_mat == 0, as_tuple=False)
+            nTriplets = qn_triplets.shape[0]
+            for i in range(nTriplets):
+                qidx, nidx = qn_triplets[i][0].item(), qn_triplets[i][1].item()
+                loss += criterion(descQ_gr[qidx: qidx+1], descQ_sa[qidx: qidx+1], descQ_sa[nidx: nidx+1])
+                loss += criterion(descQ_sa[qidx: qidx+1], descQ_gr[qidx: qidx+1], descQ_gr[nidx: nidx+1])
+                # loss += soft_triplet_loss(descQ_gr[qidx: qidx+1], descQ_sa[qidx: qidx+1], descQ_sa[nidx: nidx+1])
+                # loss += soft_triplet_loss(descQ_sa[qidx: qidx+1], descQ_gr[qidx: qidx+1], descQ_gr[nidx: nidx+1])
+            loss /= nTriplets # normalise by actual number of negatives
             loss.backward()
             optimizer.step()
-            del data_input, encoding, descQ_gr, descN_gr, descQ_sa, descN_sa
-            del query, negatives
+
+            del data_input, descQ_gr, descQ_sa,
+            del query
 
             batch_loss = loss.item()
             epoch_loss += batch_loss
 
             if iteration % 25 == 0 or nBatches <= 10:
                 tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch_num, iteration,
-                                                                       nBatches, batch_loss))
+                                                                        nBatches, batch_loss))
                 writer.add_scalar('Train/Loss', batch_loss,
-                                  ((epoch_num - 1) * nBatches) + iteration)
-                writer.add_scalar('Train/nNeg', nNeg,
-                                  ((epoch_num - 1) * nBatches) + iteration)
-                tqdm.write('Allocated: ' + humanbytes(torch.cuda.memory_allocated()))
-                tqdm.write('Cached:    ' + humanbytes(torch.cuda.memory_reserved()))
-
-        startIter += len(training_data_loader)
-        del training_data_loader, loss
-        optimizer.zero_grad()
-        torch.cuda.empty_cache()
+                                    ((epoch_num - 1) * nBatches) + iteration)
 
     avg_loss = epoch_loss / nBatches
-
     tqdm.write("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch_num, avg_loss))
     writer.add_scalar('Train/AvgLoss', avg_loss, epoch_num)
+
+    tqdm.write('Allocated: ' + humanbytes(torch.cuda.memory_allocated()))
+    tqdm.write('Cached:    ' + humanbytes(torch.cuda.memory_reserved()))

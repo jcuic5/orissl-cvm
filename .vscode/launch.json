@@ -17,10 +17,10 @@
                 "--config_path", "configs/train.ini",
                 "--save_path", "work_dirs",
                 "--dataset_root_dir", "data/CVACT_full",
-                "--threads", "6",
-                "--gpu_ids", "6",
-                // "--nEpochs", "30",
-                "--resume_path", "work_dirs/Apr05_02-52-13_cvact_resnet50/checkpoints/checkpoint.pth.tar"
+                "--threads", "1",
+                "--gpu_ids", "0",
+                "--nEpochs", "100",
+                // "--resume_path", "work_dirs/Apr05_02-52-13_cvact_resnet50/checkpoints/checkpoint.pth.tar"
             ]
         }
     ]

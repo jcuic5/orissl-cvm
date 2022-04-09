@@ -45,13 +45,15 @@ import torch.optim as optim
 
 from tensorboardX import SummaryWriter
 import numpy as np
-from orissl_cvm.utils import PACKAGE_ROOT_DIR
+from torch.utils.data import DataLoader
 
+from orissl_cvm.utils import PACKAGE_ROOT_DIR
 from orissl_cvm.utils.train_epoch import train_epoch
 from orissl_cvm.utils.val import val
 from orissl_cvm.utils.tools import save_checkpoint, input_transform
-from orissl_cvm.datasets.cvact_dataset import CVACTDataset
-from orissl_cvm.models.siamese import GoodNet
+from orissl_cvm.datasets.cvact_dataset import CVACTDataset, Collator
+from orissl_cvm.models.siamese import SAFAvgg16
+from orissl_cvm.utils.visualize import visualize_dataloader
 
 from tqdm.auto import trange
 
@@ -67,7 +69,7 @@ if __name__ == "__main__":
                         help='Full path and name (with extension) to load checkpoint from, for resuming training.')
     parser.add_argument('--dataset_root_dir', type=str, default='/',
                         help='Root directory of dataset')
-    parser.add_argument('--identifier', type=str, default='cvact_resnet50',
+    parser.add_argument('--identifier', type=str, default='cvact_vgg16',
                         help='Description of this model, e.g. mapillary_nopanos_vgg16_netvlad')
     parser.add_argument('--nEpochs', type=int, default=30, help='number of epochs to train for')
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
@@ -121,7 +123,7 @@ if __name__ == "__main__":
             print("=> loading checkpoint '{}'".format(opt.resume_path))
             checkpoint = torch.load(opt.resume_path, map_location=lambda storage, loc: storage)
 
-            model = GoodNet(config['global_params'])
+            model = SAFAvgg16(config['global_params'])
 
             model.load_state_dict(checkpoint['state_dict'])
             opt.start_epoch = checkpoint['epoch']
@@ -131,9 +133,9 @@ if __name__ == "__main__":
             raise FileNotFoundError("=> no checkpoint found at '{}'".format(opt.resume_path))
     else: # if not, assume fresh training instance and will initially generate cluster centroids
         print('===> Loading model')
-        model = GoodNet(config['global_params'])
+        model = SAFAvgg16(config['global_params'])
 
-    encoder_dim = model.encoder_dim
+    desc_dim = model.desc_dim
     print("===> Model")
     print(model)
 
@@ -156,8 +158,8 @@ if __name__ == "__main__":
                               momentum=float(config['train']['momentum']),
                               weight_decay=float(config['train']['weightDecay']))
 
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(config['train']['lrstep']),
-                                              gamma=float(config['train']['lrgamma']))
+        # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(config['train']['lrstep']),
+        #                                       gamma=float(config['train']['lrgamma']))
     else:
         raise ValueError('Unknown optimizer: ' + config['train']['optim'])
     
@@ -168,25 +170,35 @@ if __name__ == "__main__":
 
     # Loss
     criterion = nn.TripletMarginLoss(margin=float(config['train']['margin']) ** 0.5, p=2, reduction='sum').to(device)
-
-    # Dataset (no dataloader now)
+    
+    # Dataset and dataloader
     print('===> Loading dataset(s)')
     train_dataset = CVACTDataset(opt.dataset_root_dir, 
                                  mode='train', 
-                                 nNeg=int(config['train']['nNeg']), 
                                  transform=input_transform(),
-                                 bs=int(config['train']['cachebatchsize']), 
                                  threads=opt.threads, 
                                  margin=float(config['train']['margin']))
+    print(f'Full num of images in training set: {train_dataset.qImages.shape[0]}')
+    print(f'Num of queries in training set: {len(train_dataset)}')
 
-    validation_dataset = CVACTDataset(opt.dataset_root_dir, 
-                                      mode='val', 
-                                      transform=input_transform(),
-                                      nNeg=int(config['train']['nNeg']), 
-                                    #   posDistThr=25)
-                                      bs=int(config['train']['cachebatchsize']), 
-                                      threads=opt.threads,
-                                      margin=float(config['train']['margin']))
+    collator = Collator(train_dataset.qpn_matrix)
+    training_data_loader = DataLoader(dataset=train_dataset, 
+                                      num_workers=opt.threads,
+                                      batch_size=int(config['train']['batchsize']), 
+                                      shuffle=True,
+                                      collate_fn=collator, 
+                                      pin_memory=cuda)
+
+    # NOTE visualize batches for debug
+    # visualize_dataloader(training_data_loader)
+
+    # validation_dataset = CVACTDataset(opt.dataset_root_dir, 
+    #                                   mode='val', 
+    #                                   transform=input_transform(),
+    #                                 #   posDistThr=25)
+    #                                   threads=opt.threads,
+    #                                   margin=float(config['train']['margin']))
+    validation_dataset = train_dataset
 
     print('===> Training query set:', len(train_dataset.qIdx))
     print('===> Evaluating on val set, query count:', len(validation_dataset.qIdx))
@@ -215,7 +227,7 @@ if __name__ == "__main__":
 
     for epoch in trange(opt.start_epoch + 1, opt.nEpochs + 1, desc='Epoch number'.rjust(15), position=0):
 
-        train_epoch(train_dataset, model, optimizer, criterion, encoder_dim, device, epoch, opt, config, writer)
+        # train_epoch(train_dataset, training_data_loader, model, optimizer, criterion, encoder_dim, device, epoch, opt, config, writer)
 
         # TODO: delete it later
         # torch.save(model.state_dict(), join(opt.save_file_path, "a_temp_for_debug.pth"))
@@ -224,7 +236,7 @@ if __name__ == "__main__":
             scheduler.step(epoch)
 
         if (epoch % int(config['train']['evalevery'])) == 0:
-            recalls = val(validation_dataset, model, encoder_dim, device, opt, config, writer, epoch,
+            recalls = val(validation_dataset, model, desc_dim, device, opt, config, writer, epoch,
                           write_tboard=True, pbar_position=1)
             is_best = recalls[5] > best_score
             if is_best:

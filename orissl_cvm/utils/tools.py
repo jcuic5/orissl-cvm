@@ -135,3 +135,11 @@ def input_transform(resize=(112, 616)):
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225]),
         ])
+
+
+def soft_triplet_loss(a, p, n, gamma=10.0):
+    import torch.linalg as LA
+    # print(f'ditance of a with p: {LA.norm(a - p)}, a with n: {LA.norm(a - n)}')
+    loss = torch.log(1 + torch.exp(gamma * (LA.norm(a - p) - LA.norm(a - n))))
+    return loss
+

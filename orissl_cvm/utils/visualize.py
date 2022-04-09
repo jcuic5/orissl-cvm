@@ -1,5 +1,9 @@
+from configparser import Interpolation
+import imp
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
+import torch.nn.functional as F
 
 def denormalize(im):
 	image = im.numpy()
@@ -9,60 +13,90 @@ def denormalize(im):
 
 def visualize_triplet(batch, sample_idx):
 
-	query, positive, negatives, meta = batch
+	query, negatives, meta = batch
 	negCounts, indices, keys = meta['negCounts'], meta['indices'], meta['keys']
 
-	nc = 0
+	B = query[0].shape[0]
 
 	num_ns = negCounts[sample_idx].item()
-	num_qpns = num_ns + 2
+	num_qns = num_ns + 1
 
-	fig, axes = plt.subplots(nrows=num_qpns, ncols=2, figsize=(15,15))
+	neg_start = 0
+	start = 0
+	if sample_idx > 0: 
+		neg_start = negCounts[:sample_idx].sum().item()
+		start = neg_start + sample_idx * 1
+	# print(sample_idx, start)
+
+	fig, axes = plt.subplots(nrows=num_qns, ncols=2, figsize=(15,9))
 	fig.suptitle(
-		f'Batch sample {sample_idx}: query, positive, and {num_ns} negatives',
+		f'Navigate dataloader of CVACT: current batch, sample {sample_idx} (1 query and {num_ns} negatives)',
 		fontsize=15)
 	fig.tight_layout()
-	fig.subplots_adjust(top=0.95)
+	fig.subplots_adjust(top=0.9)
 	
 	axes[0,0].imshow(np.transpose(denormalize(query[0][sample_idx]),(1,2,0)))
 	axes[0,0].set_title(
-		f"Query ==> ground image\n{keys[sample_idx]['query']['gr_img']}")
+		f"Query ==> ground image\nidx: {indices[start]}, file name: {keys[sample_idx]['query']['gr_img']}")
 
 	axes[0,1].imshow(np.transpose(denormalize(query[1][sample_idx]),(1,2,0)))
 	axes[0,1].set_title(
-		f"Query ==> satellite image\n{keys[sample_idx]['query']['sa_img']}")
+		f"Query ==> satellite image\nidx: {indices[start]}, file name: {keys[sample_idx]['query']['sa_img']}")
 
-	axes[1,0].imshow(np.transpose(denormalize(positive[0][sample_idx]),(1,2,0)))
-	axes[1,0].set_title(
-		f"Positive ==> ground image\n{keys[sample_idx]['positive']['gr_img']}")
+	# axes[1,0].imshow(np.transpose(denormalize(positive[0][sample_idx]),(1,2,0)))
+	# axes[1,0].set_title(
+	# 	f"Positive ==> ground image\n{keys[sample_idx]['positive']['gr_img']}")
 	
-	axes[1,1].imshow(np.transpose(denormalize(positive[1][sample_idx]),(1,2,0)))
-	axes[1,1].set_title(
-		f"Positive ==> satellite image\n{keys[sample_idx]['positive']['sa_img']}")
+	# axes[1,1].imshow(np.transpose(denormalize(positive[1][sample_idx]),(1,2,0)))
+	# axes[1,1].set_title(
+	# 	f"Positive ==> satellite image\n{keys[sample_idx]['positive']['sa_img']}")
 
 	for i in range(num_ns):
-		axes[2+i,0].imshow(np.transpose(denormalize(negatives[0][nc+i]),(1,2,0)))
-		axes[2+i,0].set_title(
-			f"Negative {i} ==> ground image\n{keys[sample_idx]['negatives'][i]['gr_img']}")
+		axes[1+i,0].imshow(np.transpose(denormalize(negatives[0][neg_start+i]),(1,2,0)))
+		axes[1+i,0].set_title(
+			f"Negative {i} ==> ground image\nidx: {indices[start+i+1]}, file name: {keys[sample_idx]['negatives'][i]['gr_img']}")
 
-		axes[2+i,1].imshow(np.transpose(denormalize(negatives[1][nc+i]),(1,2,0)))
-		axes[2+i,1].set_title(
-			f"Negative {i} ==> satellite image\n{keys[sample_idx]['negatives'][i]['sa_img']}")
-	nc += num_ns
+		axes[1+i,1].imshow(np.transpose(denormalize(negatives[1][neg_start+i]),(1,2,0)))
+		axes[1+i,1].set_title(
+			f"Negative {i} ==> satellite image\nidx: {indices[start+i+1]}, file name: {keys[sample_idx]['negatives'][i]['sa_img']}")
+
+	plt.show()
+
+def visualize_plain_batch(batch):
+
+	query, meta = batch
+	indices, keys, qpn_mat = meta['indices'], meta['keys'], meta['qpn_mat']
+	B = query[0].shape[0]
+
+	fig, axes = plt.subplots(nrows=B, ncols=2, figsize=(10,10*B/2))
+	fig.suptitle(f'Navigate dataloader of CVACT: current batch', fontsize=12)
+	fig.tight_layout()
+	fig.subplots_adjust(top=0.9)
+	print(qpn_mat)
+
+	for i in range(B):
+		axes[i,0].imshow(np.transpose(denormalize(query[0][i]),(1,2,0)))
+		axes[i,0].set_title(
+			f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys[i]['gr_img']}", fontsize=8)
+
+		axes[i,1].imshow(np.transpose(denormalize(query[1][i]),(1,2,0)))
+		axes[i,1].set_title(
+			f"Sample {i} ==> satellite image\nidx: {indices[i]}, file name: {keys[i]['sa_img']}", fontsize=8)
+
 	plt.show()
 
 def visualize_dataloader(training_loader):
-
 	bs = training_loader.batch_size
 	it = iter(training_loader)
 	while True:
 		try:
 			batch = next(it)
-			for i in range(bs):
-				visualize_triplet(batch, i)
+			# for i in range(bs):
+			# 	visualize_triplet(batch, i)
+			visualize_plain_batch(batch)
 		except StopIteration:
 			print("Data loader ran out.")
-
+			break
 
 def visualize_dataloader_interact(training_loader):
 	'''Note: To be launched in Jupyter'''
@@ -96,3 +130,35 @@ def visualize_dataloader_interact(training_loader):
 	button.on_click(on_button_clicked)
 	# displaying button and its output together
 	widgets.VBox([button,out])
+
+def visualize_desc(desc_gr, desc_sa):
+	B = desc_gr.shape[0]
+	C = desc_gr.shape[1]
+	vis_ratio = 10
+	desc_gr = F.adaptive_avg_pool1d(desc_gr.unsqueeze(1), int(C/vis_ratio)).squeeze(1)
+	desc_sa = F.adaptive_avg_pool1d(desc_sa.unsqueeze(1), int(C/vis_ratio)).squeeze(1)
+
+	desc_gr_cdn, desc_sa_cdn = desc_gr.detach().cpu().numpy(), desc_sa.detach().cpu().numpy()
+
+	fig, axes = plt.subplots(nrows=B, ncols=2, figsize=(5,5))
+	fig.suptitle(f'Output descriptors of current batch', fontsize=12)
+	fig.tight_layout()
+	fig.subplots_adjust(top=0.9)
+
+	random = axes[0,0].imshow(np.random.random((1, int(C/vis_ratio))), cmap='viridis', interpolation='none')
+	fig.colorbar(random, ax=axes[0:,0:], location='right', shrink=0.2)
+
+	for i in range(B):
+		im0 = axes[i,0].imshow(desc_gr_cdn[i:i+1], cmap='viridis', interpolation='none')
+		axes[i,0].set_aspect(25)
+		axes[i,0].set_title(f"Sample {i} ==> ground descriptor", fontsize=8)
+		# axes[i,0].axis('off')
+		axes[i,0].get_yaxis().set_visible(False)
+
+		im1 = axes[i,1].imshow(desc_sa_cdn[i:i+1], cmap='viridis', interpolation='none')
+		axes[i,1].set_aspect(25)
+		axes[i,1].set_title(f"Sample {i} ==> satellite descriptor", fontsize=8)
+		# axes[i,1].axis('off')
+		axes[i,1].get_yaxis().set_visible(False)
+
+	plt.show()

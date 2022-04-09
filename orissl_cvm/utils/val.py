@@ -34,79 +34,57 @@ from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from orissl_cvm.datasets.cvact_dataset import ImagePairsFromList
 from orissl_cvm.utils.tools import input_transform
+from orissl_cvm.utils.visualize import visualize_desc
 
 
-def val(eval_set, model, encoder_dim, device, opt, config, writer, epoch_num=0, write_tboard=False, pbar_position=0):
+def val(eval_set, model, desc_dim, device, opt, config, writer, epoch_num=0, write_tboard=False, pbar_position=0):
     if device.type == 'cuda':
         cuda = True
     else:
         cuda = False
     eval_set_queries = ImagePairsFromList(eval_set.root_dir, eval_set.qImages, transform=input_transform())
-    eval_set_dbs = ImagePairsFromList(eval_set.root_dir, eval_set.dbImages, transform=input_transform())
     opt = {
-        'batch_size': int(config['train']['cachebatchsize']), 
+        'batch_size': int(config['train']['batchsize']), 
         'shuffle': False, 
         'num_workers': opt.threads, 
         'pin_memory': cuda, 
         'collate_fn': ImagePairsFromList.collate_fn
     }
     test_data_loader_queries = DataLoader(dataset=eval_set_queries, **opt)
-    test_data_loader_dbs = DataLoader(dataset=eval_set_dbs, **opt)
 
     model.eval()
     with torch.no_grad():
         tqdm.write('====> Extracting Features')
-        pool_size = encoder_dim
-        qFeat_gr = np.empty((len(eval_set_queries), pool_size), dtype=np.float32)
-        dbFeat_sa = np.empty((len(eval_set_dbs), pool_size), dtype=np.float32)
+        qFeat_gr = np.empty((len(eval_set_queries), desc_dim), dtype=np.float32)
+        qFeat_sa = np.empty((len(eval_set_queries), desc_dim), dtype=np.float32)
 
-        for idx, (feat, test_data_loader) in enumerate(zip([qFeat_gr, dbFeat_sa], 
-                                [test_data_loader_queries, test_data_loader_dbs])):
-            for iteration, batch in enumerate(tqdm(test_data_loader, 
-                    position=pbar_position, leave=False, desc='Test Iter'.rjust(15)), 1):
-                if batch is None: 
-                    continue
-                data_input, indices = batch
-                data_input = [x.to(device) for x in data_input]
-                encoding = model(*data_input)
-                # TODO: basically we want use query gr image to match the sa image in database,
-                # so for query dataloader we just need to forward gr feat, and for database 
-                # dataloader just the sa feat. Implement later
-                feat[indices.detach().numpy(), :] = encoding[idx].detach().cpu().numpy()
+        for iteration, batch in enumerate(tqdm(test_data_loader_queries, 
+                position=pbar_position, leave=False, desc='Test Iter'.rjust(15)), 1):
+            if batch is None: 
+                continue
+            data_input, indices = batch
+            data_input = [x.to(device) for x in data_input]
+            encoding = model(*data_input)
+            qFeat_gr[indices.detach().numpy(), :] = encoding[0].detach().cpu().numpy()
+            qFeat_sa[indices.detach().numpy(), :] = encoding[1].detach().cpu().numpy()
 
-                del data_input, encoding
+            del data_input, encoding
 
-    del test_data_loader_queries, test_data_loader_dbs
+    del test_data_loader_queries
 
-    tqdm.write('====> Building faiss index')
-    # ? the following two lines make no sense right? it will be replaced later in the city's loop
-    faiss_index = faiss.IndexFlatL2(pool_size)
-    # noinspection PyArgumentList
-    faiss_index.add(dbFeat_sa)
+    visualize_desc(torch.from_numpy(qFeat_gr), torch.from_numpy(qFeat_sa))
 
     tqdm.write('====> Calculating recall @ N')
-    n_values = [1, 5, 10, 20, 50, 100]
+    # n_values = [1, 5, 10, 20, 50, 100, 500]
+    n_values = [1, 2, 3, 4, 5, 6, 7, 8]
 
     # for each query get those within threshold distance
     gt = eval_set.all_pos_indices
 
     # any combination of mapillary cities will work as a val set
-    qEndPosTot = 0
-    dbEndPosTot = 0
-    # NOTE msls dataset's train/val/test set each contains many cities, and ofc we could construct 
-    # search tree for each city and search within the city. Dataset's qEndPosList and dbEndPosList
-    # contains a list of indices as the cuts. We kept the list usage, but it will contain only one 
-    # value. And actually the name of cityNum means nothing
-    for cityNum, (qEndPos, dbEndPos) in enumerate(zip(eval_set.qEndPosList, eval_set.dbEndPosList)):
-        faiss_index = faiss.IndexFlatL2(pool_size)
-        faiss_index.add(dbFeat_sa[dbEndPosTot:dbEndPosTot+dbEndPos, :])
-        _, preds = faiss_index.search(qFeat_gr[qEndPosTot:qEndPosTot+qEndPos, :], max(n_values))
-        if cityNum == 0:
-            predictions = preds
-        else:
-            predictions = np.vstack((predictions, preds))
-        qEndPosTot += qEndPos
-        dbEndPosTot += dbEndPos
+    faiss_index = faiss.IndexFlatL2(desc_dim)
+    faiss_index.add(qFeat_sa)
+    _, predictions = faiss_index.search(qFeat_gr, max(n_values))
 
     correct_at_n = np.zeros(len(n_values))
     # TODO can we do this on the matrix in one go?
@@ -116,6 +94,8 @@ def val(eval_set, model, encoder_dim, device, opt, config, writer, epoch_num=0, 
             if np.any(np.in1d(pred[:n], gt[qIx])):
                 correct_at_n[i:] += 1
                 break
+    # 简单来说，就是在以这个严格标准下评判（只要pred中的前这些个里面有一个真的是gt里的
+    # 一个就可以）总共有多少比例的qidx
     recall_at_n = correct_at_n / len(eval_set.qIdx)
 
     all_recalls = {}  # make dict for output

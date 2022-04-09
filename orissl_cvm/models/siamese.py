@@ -1,6 +1,7 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from orissl_cvm.models.models_generic import get_backend, get_model
+import torchvision.models as models
 
 
 class EmbeddingNet(nn.Module):
@@ -73,23 +74,93 @@ class SiameseNet(nn.Module):
         return self.embedding_net(x)
 
 
-class GoodNet(nn.Module):
+class Flatten(nn.Module):
+    def forward(self, input_data):
+        return input_data.view(input_data.size(0), -1)
+
+
+class L2Norm(nn.Module):
+    def __init__(self, dim=1):
+        super().__init__()
+        self.dim = dim
+
+    def forward(self, input_data):
+        return F.normalize(input_data, p=2, dim=self.dim)
+
+
+def get_pool(config): 
+    # config['global_params'] is passed as config
+    if config['pooling'].lower() == 'max':
+        global_pool = nn.AdaptiveMaxPool2d((1, 1))
+        return nn.Sequential(*[global_pool, Flatten(), L2Norm()])
+    elif config['pooling'].lower() == 'avg':
+        global_pool = nn.AdaptiveAvgPool2d((1, 1))
+        return nn.Sequential(*[global_pool, Flatten(), L2Norm()])
+    else:
+        raise ValueError('Unknown pooling type: ' + config['pooling'].lower())
+
+
+class SPE(nn.Module):
+    def __init__(self):
+        super(SPE, self).__init__()
+
+        # pool size=14, dimension=8
+        self.pool = nn.AdaptiveMaxPool2d((14, 14))
+        self.fc1 = nn.Linear(14*14, int(14*14*8/2), bias=True)
+        self.fc2 = nn.Linear(int(14*14*8/2), 14*14*8, bias=True)
+
+    def forward(self, fmp):
+        # max pool
+        fmp_pooled = self.pool(fmp)
+        B, C, H, W = fmp_pooled.shape
+        # spatial-aware improtance generator
+        x = torch.mean(fmp_pooled, dim=1).flatten(start_dim=-2, end_dim=-1)
+        x = self.fc2(self.fc1(x)).reshape(B, -1, H*W) #(B, D, H*W)
+        # aggregate
+        fmp_pooled = fmp_pooled.flatten(start_dim=-2, end_dim=-1) #(B, C, H*W)
+        feat = torch.einsum('bci,bdi->bdc', fmp_pooled, x) #(B, C, D) - frobenius on each C,D
+        feat = feat.flatten(start_dim=-2, end_dim=-1) #(B, C*D)
+
+        return F.normalize(feat, p=2, dim=1)
+
+
+class SAFAvgg16(nn.Module):
     def __init__(self, config):
-        super(GoodNet, self).__init__()
+        super(SAFAvgg16, self).__init__()
 
-        encoder_dim_gr, encoder_gr = get_backend()
-        self.nn_model_gr = get_model(encoder_gr, encoder_dim_gr, config)
-        encoder_dim_sa, encoder_sa = get_backend()
-        self.nn_model_sa = get_model(encoder_sa, encoder_dim_sa, config)
+        self.nn_model_gr = self.get_model()
+        self.nn_model_sa = self.get_model()
 
-        # NOTE: now desc dims from two sources are expected to be the same
-        assert(encoder_dim_gr == encoder_dim_sa)
-        self.encoder_dim = encoder_dim_gr
+        self.encoder_dim = 512
+        self.spe_dim = 8
+        self.num_spes = 1
+        self.desc_dim = self.encoder_dim * self.spe_dim * self.num_spes #default: 4096
+
+    def get_model(self):
+        nn_model = nn.Module()
+        nn_model.add_module('encoder', self.get_backend())
+        spe_gr = nn.Module()
+        for i in range(1): 
+            spe_gr.add_module(f'spe_{i}', SPE())
+        nn_model.add_module('spe', spe_gr)
+        
+        return nn_model
+
+    def get_backend(self):
+        enc = models.vgg16(pretrained=True)
+        # NOTE optionally drop the last two layers: ReLU and MaxPool2d
+        layers = list(enc.features.children())[:-2]
+        # NOTE optionally freeze part of the backbone
+        # only train conv5_1, conv5_2, and conv5_3 (leave rest same as Imagenet trained weights)
+        # for layer in layers[:-5]:
+        #     for p in layer.parameters():
+        #         p.requires_grad = False
+        enc = nn.Sequential(*layers)
+        return enc
 
     def forward(self, x1, x2):
-        desc_gr = self.nn_model_gr.pool(self.nn_model_gr.encoder(x1))
-        desc_sa = self.nn_model_sa.pool(self.nn_model_sa.encoder(x2))
-        return desc_gr, desc_sa
-
-    def get_embedding(self, x1, x2):
-        return self.nn_model_gr.encoder(x1), self.nn_model_sa.encoder(x2)
+        desc = []
+        for nn_model, x in zip((self.nn_model_gr, self.nn_model_sa), (x1, x2)):
+            enc = nn_model.encoder(x)
+            desc.append(torch.cat([spe_i(enc) for spe_i in nn_model.spe.children()], dim=1))
+        return tuple(desc)
