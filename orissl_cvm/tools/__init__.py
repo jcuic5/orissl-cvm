@@ -30,7 +30,8 @@ from scipy.sparse.linalg import eigs
 import torch
 import shutil
 from os.path import join
-from torchvision import transforms
+from PIL import Image
+import logging
 
 
 def pca(x: np.ndarray, num_pcs=None, subtract_mean=True):
@@ -111,35 +112,28 @@ def humanbytes(B):
         return '{0:.2f} TB'.format(B/TB)
 
 
-def save_checkpoint(state, opt, is_best_sofar, filename='checkpoint.pth.tar'):
-    if opt.save_every_epoch:
-        model_out_path = join(opt.save_file_path, 'checkpoint_epoch' + str(state['epoch']) + '.pth.tar')
+def save_checkpoint(state, config, is_best_sofar, filename='checkpoint.pth.tar'):
+    if config.train.save_every_epoch:
+        model_out_path = join(config.train.save_file_path, 'checkpoint_epoch' + str(state['epoch']) + '.pth.tar')
     else:
-        model_out_path = join(opt.save_file_path, filename)
+        model_out_path = join(config.train.save_file_path, filename)
     torch.save(state, model_out_path)
     if is_best_sofar:
-        shutil.copyfile(model_out_path, join(opt.save_file_path, 'model_best.pth.tar'))
+        shutil.copyfile(model_out_path, join(config.train.save_file_path, 'model_best.pth.tar'))
 
 
-def input_transform(resize=(112, 616)):
-    if resize[0] > 0 and resize[1] > 0:
-        return transforms.Compose([
-            transforms.Resize(resize),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225]),
-        ])
-    else:
-        return transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225]),
-        ])
-
-
-def soft_triplet_loss(a, p, n, gamma=10.0):
-    import torch.linalg as LA
-    # print(f'ditance of a with p: {LA.norm(a - p)}, a with n: {LA.norm(a - n)}')
-    loss = torch.log(1 + torch.exp(gamma * (LA.norm(a - p) - LA.norm(a - n))))
-    return loss
-
+def create_logger(log_file=None, rank=0, log_level=logging.INFO):
+    # NOTE code from OpenPCDet
+    logger = logging.getLogger(__name__)
+    logger.setLevel(log_level if rank == 0 else 'ERROR')
+    formatter = logging.Formatter('%(asctime)s  %(levelname)5s  %(message)s')
+    console = logging.StreamHandler()
+    console.setLevel(log_level if rank == 0 else 'ERROR')
+    console.setFormatter(formatter)
+    logger.addHandler(console)
+    if log_file is not None:
+        file_handler = logging.FileHandler(filename=log_file)
+        file_handler.setLevel(log_level if rank == 0 else 'ERROR')
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    return logger

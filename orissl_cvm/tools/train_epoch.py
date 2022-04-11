@@ -24,27 +24,28 @@ SOFTWARE.
 Significant parts of our code are based on [Nanne's pytorch-netvlad repository]
 (https://github.com/Nanne/pytorch-NetVlad/), as well as some parts from the [Mapillary SLS repository]
 (https://github.com/mapillary/mapillary_sls)
+
+Modified by Jianfeng Cui
 '''
 
 
 import torch
 from tqdm.auto import trange, tqdm
 from torch.utils.data import DataLoader
-from orissl_cvm.utils.tools import humanbytes, soft_triplet_loss
+from orissl_cvm.tools import humanbytes
+from orissl_cvm.utils import soft_triplet_loss
 from orissl_cvm.datasets.cvact_dataset import CVACTDataset
-from orissl_cvm.utils.visualize import visualize_desc
+from orissl_cvm.tools.visualize import visualize_desc
 
 
 def train_epoch(train_dataset, training_data_loader, model, 
                 optimizer, criterion, encoder_dim, device, 
-                epoch_num, opt, config, writer):
+                epoch_num, config, writer):
         
     epoch_loss = 0
-    nBatches = (len(train_dataset.qIdx) + int(config['train']['batchsize']) - 1) // \
-                                                    int(config['train']['batchsize'])
+    n_batches = (len(train_dataset.qIdx) + config.train.batch_size - 1) // config.train.batch_size
 
     model.train()
-    # Iterate
     for iteration, batch in enumerate(tqdm(training_data_loader, 
                                             position=1, 
                                             leave=False, 
@@ -55,23 +56,27 @@ def train_epoch(train_dataset, training_data_loader, model,
             continue
 
         # unwrap the batch information
-        query, meta = batch
+        query_gr, query_sa, meta = batch
         indices, keys, qpn_mat = meta['indices'], meta['keys'], meta['qpn_mat']
-        B = query[0].shape[0]
-        data_input = [x.to(device) for x in list(query)]
+        B = query_gr.shape[0]
+        query_gr, query_sa = query_gr.to(device), query_sa.to(device)
         qpn_mat = torch.from_numpy(qpn_mat).to(device)
+        qn_triplets = torch.nonzero(qpn_mat == 0, as_tuple=False)
+        nTriplets = qn_triplets.shape[0]
+        if nTriplets == 0:
+            del query_gr, query_sa
+            continue
 
         # forward
-        descQ_gr, descQ_sa = model(*data_input)
+        descQ_gr, descQ_sa = model(query_gr, query_sa)
 
+        # NOTE visualize the descriptor for debug
         # if i % 50 == 0:
             # visualize_desc(descQ_gr, descQ_sa)
 
         # calculate loss, back propagate, update weights
         optimizer.zero_grad()
         loss = 0
-        qn_triplets = torch.nonzero(qpn_mat == 0, as_tuple=False)
-        nTriplets = qn_triplets.shape[0]
         for i in range(nTriplets):
             qidx, nidx = qn_triplets[i][0].item(), qn_triplets[i][1].item()
             # loss += criterion(descQ_gr[qidx: qidx+1], descQ_sa[qidx: qidx+1], descQ_sa[nidx: nidx+1])
@@ -82,19 +87,18 @@ def train_epoch(train_dataset, training_data_loader, model,
         loss.backward()
         optimizer.step()
 
-        del data_input, descQ_gr, descQ_sa,
-        del query
+        del query_gr, query_sa, descQ_gr, descQ_sa
 
         batch_loss = loss.item()
         epoch_loss += batch_loss
 
-        if iteration % 25 == 0 or nBatches <= 10:
+        if iteration % 25 == 0 or n_batches <= 10:
             tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch_num, iteration,
-                                                                    nBatches, batch_loss))
+                                                                    n_batches, batch_loss))
             writer.add_scalar('Train/Loss', batch_loss,
-                                ((epoch_num - 1) * nBatches) + iteration)
+                                ((epoch_num - 1) * n_batches) + iteration)
 
-    avg_loss = epoch_loss / nBatches
+    avg_loss = epoch_loss / n_batches
     tqdm.write("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch_num, avg_loss))
     writer.add_scalar('Train/AvgLoss', avg_loss, epoch_num)
 

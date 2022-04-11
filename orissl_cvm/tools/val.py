@@ -24,6 +24,8 @@ SOFTWARE.
 Significant parts of our code are based on [Nanne's pytorch-netvlad repository]
 (https://github.com/Nanne/pytorch-NetVlad/), as well as some parts from the [Mapillary SLS repository]
 (https://github.com/mapillary/mapillary_sls)
+
+Modified by Jianfeng Cui
 '''
 
 
@@ -33,20 +35,20 @@ import faiss
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from orissl_cvm.datasets.cvact_dataset import ImagePairsFromList
-from orissl_cvm.utils.tools import input_transform
-from orissl_cvm.utils.visualize import visualize_desc
+from orissl_cvm.utils import input_transform
+from orissl_cvm.tools.visualize import visualize_desc
 
 
-def val(eval_set, model, desc_dim, device, opt, config, writer, epoch_num=0, write_tboard=False, pbar_position=0):
+def val(eval_set, model, desc_dim, device, config, writer, epoch_num=0, write_tboard=False, pbar_position=0):
     if device.type == 'cuda':
         cuda = True
     else:
         cuda = False
     eval_set_queries = ImagePairsFromList(eval_set.root_dir, eval_set.qImages, transform=input_transform())
     opt = {
-        'batch_size': int(config['train']['batchsize']), 
+        'batch_size': config.train.batch_size, 
         'shuffle': False, 
-        'num_workers': opt.threads, 
+        'num_workers': int(config.train.threads), 
         'pin_memory': cuda, 
         'collate_fn': ImagePairsFromList.collate_fn
     }
@@ -63,13 +65,13 @@ def val(eval_set, model, desc_dim, device, opt, config, writer, epoch_num=0, wri
             if batch is None: 
                 tqdm.write('====> Batch data iteration is None. Probably caused by corrupted file')
                 continue
-            data_input, indices = batch
-            data_input = [x.to(device) for x in data_input]
-            encoding = model(*data_input)
+            img_gr, img_sa, indices = batch
+            img_gr, img_sa = img_gr.to(device), img_sa.to(device)
+            encoding = model(img_gr, img_sa)
             qFeat_gr[indices.detach().numpy(), :] = encoding[0].detach().cpu().numpy()
             qFeat_sa[indices.detach().numpy(), :] = encoding[1].detach().cpu().numpy()
 
-            del data_input, encoding
+            del img_gr, img_sa, encoding
 
     del test_data_loader_queries
 
@@ -78,7 +80,8 @@ def val(eval_set, model, desc_dim, device, opt, config, writer, epoch_num=0, wri
 
     tqdm.write('====> Calculating recall @ N')
     n_values = [1, 5, 10, 20, 50, 100]
-    # n_values = [1, 2, 3, 4, 5, 6, 7, 8] #NOTE for debug on a single 8-sample batch
+    # NOTE for debug on a single 8-sample batch
+    # n_values = [1, 2, 3, 4, 5, 6, 7, 8]
 
     # for each query get those within threshold distance
     gt = eval_set.all_pos_indices

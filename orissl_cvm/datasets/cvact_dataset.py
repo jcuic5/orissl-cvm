@@ -1,3 +1,30 @@
+'''
+Copyright (c) Facebook, Inc. and its affiliates.
+
+MIT License
+
+Copyright (c) 2020 mapillary
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Modified by Jianfeng Cui
+'''
 import sys
 from os.path import join
 import numpy as np
@@ -6,11 +33,7 @@ import torch
 from torch.utils.data import Dataset
 import torch.utils.data as data
 from sklearn.neighbors import NearestNeighbors
-import itertools
-import math
-import random
-from tqdm import tqdm
-
+from orissl_cvm import PACKAGE_ROOT_DIR
 
 class ImagePairsFromList(Dataset):
     def __init__(self, root_dir, images, transform):
@@ -30,8 +53,7 @@ class ImagePairsFromList(Dataset):
             img_sa = self.transform(Image.open(join(self.sa_path, self.images[idx]['sa_img'])))
         except:
             return None
-
-        return (img_gr, img_sa), idx
+        return img_gr, img_sa, idx
 
     @staticmethod
     def collate_fn(batch):
@@ -39,8 +61,8 @@ class ImagePairsFromList(Dataset):
 
 
 class CVACTDataset(Dataset):
-    def __init__(self, root_dir, mode='train', transform=None, posDistThr=15, 
-                 negDistThr=100, positive_sampling=True, threads=6, margin=0.1):
+    def __init__(self, root_dir, mode='train', transform=None, posDistThr=5, 
+                 negDistThr=100, positive_sampling=False, mini_scale=None):
 
         # initializing
         assert mode in ('train', 'val', 'test')
@@ -57,7 +79,6 @@ class CVACTDataset(Dataset):
         self.all_pos_indices = []
 
         # hyper-parameters
-        self.margin = margin
         self.posDistThr = posDistThr
         self.negDistThr = negDistThr
 
@@ -67,25 +88,23 @@ class CVACTDataset(Dataset):
         # other
         self.transform = transform
 
-        # load data # TODO a better way?
-        data_info_path = join(sys.path[0], 'assets/CVACT_infos')
+        # load data
+        data_info_path = join(PACKAGE_ROOT_DIR, 'assets/CVACT_infos_mini')
 
-        # when GPS / UTM is available
         if self.mode in ['train', 'val']:
             keysQ, utmQ = self.read_info(data_info_path, self.mode)
             assert(len(keysQ) != 0 and len(utmQ) != 0)
-
-            # train_keys, train_utms = self.read_info(data_info_path, 'train')
-            # val_keys, val_utms = self.read_info(data_info_path, 'val')
-            # keys = train_keys + val_keys
-            # utms = np.concatenate((train_utms, val_utms), axis=0)
+            if mini_scale is not None or mini_scale != 1:
+                rand = np.random.choice(len(keysQ), int(len(keysQ)*mini_scale), replace=False)
+                keysQ = [keysQ[i] for i in rand]
+                utmQ = utmQ[rand, :]
 
             self.qImages.extend(keysQ)
             self.qEndPosList.append(len(keysQ))
 
             # find positive images for training
             neigh = NearestNeighbors(algorithm='kd_tree')
-            print(f'Construct neighbor searches: {neigh.algorithm}')
+            print(f'Construct neighbor searches for {self.mode} set: {neigh.algorithm}')
             neigh.fit(utmQ)
             pos_distances, pos_indices = neigh.radius_neighbors(utmQ, self.posDistThr)
             print(f'Finding positive neighbors for {utmQ.shape[0]} queries')
@@ -103,17 +122,20 @@ class CVACTDataset(Dataset):
                     self.qIdx.append(q_idx)
                     self.pIdx.append(p_idxs)
 
-                    # in training we have two thresholds, one for finding positives and one for finding images
-                    # that we are certain are negatives.
+                    # in training we have two thresholds, one for finding positives and one 
+                    # for finding images that we are certain are negatives.
                     if self.mode == 'train':
                         n_idxs = nnI[q_idx]
                         self.nonNegIdx.append(n_idxs)
 
-        # when GPS / UTM / pano info is not available
         elif self.mode in ['test']:
             # load images for subtask
             keysQ, utmQ = self.read_info(data_info_path, 'test')
             assert(len(keysQ) != 0 and len(utmQ) != 0)
+            if mini_scale is not None or mini_scale != 1:
+                rand = np.random.choice(len(keysQ), int(len(keysQ)*mini_scale), replace=False)
+                keysQ = [keysQ[i] for i in rand]
+                utmQ = utmQ[rand, :]
 
             self.qImages.extend(keysQ)
             # add query index
@@ -143,7 +165,6 @@ class CVACTDataset(Dataset):
 
         # decide device type ( important for triplet mining )
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.threads = threads
 
         if mode == 'train':
             # calculate weights for positive sampling
@@ -167,62 +188,48 @@ class CVACTDataset(Dataset):
 
         return key_list, np.asarray(utm_list)
 
+    # TODO possibly give weights to queries in the future
     def __calcSamplingWeights__(self):
-
         # length of query
         N = len(self.qIdx)
-
         # initialize weights
         self.weights = np.ones(N)
-
         # weight higher if ...
         pass
-
         # print weight information
         pass
 
     def __getitem__(self, qidx):
         key = self.qImages[qidx]
-
-        # load images into triplet list
+        # load images
         try:
             query_gr = self.transform(Image.open(join(self.gr_path, key['gr_img'])))
             query_sa = self.transform(Image.open(join(self.sa_path, key['sa_img'])))
-            query = query_gr, query_sa
-
         except:
-            # NOTE: errors met till now: 
+            # NOTE errors might met: 
             # FileNotFoundError, OSError: image file is truncated
-            # https://stackoverflow.com/a/23575424 could solve it but we choose not to use it
+            # https://stackoverflow.com/a/23575424 could solve the truncated issue 
+            # but we choose directly not to use the sample
             return None
-
-        return query, key, qidx
+        return query_gr, query_sa, key, qidx
 
     def __len__(self):
         return self.length
 
-
-class Collator(object):
-    def __init__(self, qpn_matrix) -> None:
-        self.qpn_matrix = qpn_matrix
-
-    def __call__(self, batch):
+    @staticmethod
+    def collate_fn(batch, qpn_matrix):
         if None in batch:
             return None
+        query_gr, query_sa, key, qidx = zip(*batch)
 
-        query, key, qidx = zip(*batch)
-
-        query_gr = data.dataloader.default_collate([q[0] for q in query])
-        query_sa = data.dataloader.default_collate([q[1] for q in query])
-        query = query_gr, query_sa
-
+        query_gr = data.dataloader.default_collate(query_gr)
+        query_sa = data.dataloader.default_collate(query_sa)
         qidx, key = list(qidx), list(key)
-        batch_qpn_mat = self.qpn_matrix[qidx, :][:, qidx]
-
+        batch_qpn_mat = qpn_matrix[qidx, :][:, qidx]
         meta = {
             'indices': qidx,
             'keys': key,
             'qpn_mat': batch_qpn_mat
         }
+        return query_gr, query_sa, meta
 
-        return query, meta
