@@ -1,3 +1,4 @@
+from turtle import forward
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -70,3 +71,23 @@ class SAFAvgg16(nn.Module):
             desc.append(torch.cat([spe_i(enc) for spe_i in nn_model.spe.children()], dim=1))
 
         return tuple(desc)
+
+
+class SAFAvgg16Cls(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.SAFAvgg16 = SAFAvgg16()
+        self.classifier = nn.Sequential(
+            nn.Linear(8192, 4096, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5),
+            nn.Linear(4096, 1024, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5),
+            nn.Linear(1024, 36, bias=True)
+        )
+
+    def forward(self, x1, x2):
+        desc = torch.cat(self.SAFAvgg16(x1, x2), dim=1)
+        return self.classifier(desc)

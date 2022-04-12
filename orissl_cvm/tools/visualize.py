@@ -85,6 +85,29 @@ def visualize_plain_batch(batch):
 
 	plt.show()
 
+def visualize_plain_batch_pretrain(batch):
+
+	print(batch)
+	query_gr, query_sa, label, meta = batch
+	indices, keys = meta['indices'], meta['keys']
+	B = query_gr.shape[0]
+
+	fig, axes = plt.subplots(nrows=B, ncols=2, figsize=(10,10*B/2))
+	fig.suptitle(f'Navigate dataloader of CVACT: current batch', fontsize=12)
+	fig.tight_layout()
+	fig.subplots_adjust(top=0.9)
+
+	for i in range(B):
+		axes[i,0].imshow(np.transpose(denormalize(query_gr[i]),(1,2,0)))
+		axes[i,0].set_title(
+			f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys[i]['gr_img']}, label: {label[i]}", fontsize=8)
+
+		axes[i,1].imshow(np.transpose(denormalize(query_sa[i]),(1,2,0)))
+		axes[i,1].set_title(
+			f"Sample {i} ==> satellite image\nidx: {indices[i]}, file name: {keys[i]['sa_img']}", fontsize=8)
+
+	plt.show()
+
 def visualize_dataloader(training_loader):
 	bs = training_loader.batch_size
 	it = iter(training_loader)
@@ -93,7 +116,8 @@ def visualize_dataloader(training_loader):
 			batch = next(it)
 			# for i in range(bs):
 			# 	visualize_triplet(batch, i)
-			visualize_plain_batch(batch)
+			# visualize_plain_batch(batch)
+			visualize_plain_batch_pretrain(batch)
 		except StopIteration:
 			print("Data loader ran out.")
 			break

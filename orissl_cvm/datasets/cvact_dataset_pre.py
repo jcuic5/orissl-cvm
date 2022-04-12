@@ -6,11 +6,12 @@ from orissl_cvm.datasets.cvact_dataset import CVACTDataset
 import random
 import torch
 
+
 def random_slide_pano(img):
     H, W = img.shape[-2], img.shape[-1]
     label = random.randint(0, 35)
     slide_w = int(float(label / 36) * W)
-    img = torch.cat([img[..., slide_w:], img[..., :slide_w]])
+    img = torch.cat([img[..., slide_w:], img[..., :slide_w]], dim=-1)
     label = torch.zeros(36, dtype=torch.float).scatter_(dim=0, index=torch.tensor(label), value=1)
     return img, label
 
@@ -30,9 +31,9 @@ class CVACTDatasetPretrain(CVACTDataset):
     def collate_fn(batch):
         if None in batch:
             return None
-        query, label, key, qidx = zip(*batch)
-        query_gr = data.dataloader.default_collate([q[0] for q in query])
-        query_sa = data.dataloader.default_collate([q[1] for q in query])
+        query_gr, query_sa, label, key, qidx = zip(*batch)
+        query_gr = data.dataloader.default_collate(query_gr)
+        query_sa = data.dataloader.default_collate(query_sa)
         label = data.dataloader.default_collate(label)
         qidx, key = list(qidx), list(key)
         meta = {

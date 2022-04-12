@@ -33,7 +33,6 @@ import torch
 from torch.utils.data import Dataset
 import torch.utils.data as data
 from sklearn.neighbors import NearestNeighbors
-from orissl_cvm import PACKAGE_ROOT_DIR
 
 class ImagePairsFromList(Dataset):
     def __init__(self, root_dir, images, transform):
@@ -89,7 +88,7 @@ class CVACTDataset(Dataset):
         self.transform = transform
 
         # load data
-        data_info_path = join(PACKAGE_ROOT_DIR, 'assets/CVACT_infos_mini')
+        data_info_path = join(sys.path[0], 'assets/CVACT_infos_mini')
 
         if self.mode in ['train', 'val']:
             keysQ, utmQ = self.read_info(data_info_path, self.mode)

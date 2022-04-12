@@ -1,0 +1,34 @@
+train:
+  seed: 123
+  batch_size: 4
+  # path to save checkpoints and logs to
+  save_path: 'work_dirs'
+  # full path and name (with extension) to load checkpoint from, for resuming training
+  resume_path: ''
+  dataset_root_dir: 'data/CVACT_full'
+  identifier: 'cvact_vgg16_pretrain'
+  n_epochs: 100
+  # manual epoch number (useful on restarts)
+  start_epoch: 0
+  # validation and save ckpt for every #
+  eval_every: 1
+  patience: 10
+  # flag to set a separate checkpoint file for each new epoch
+  save_every_epoch: False
+  threads: '0'
+  # visible gpu ids to use
+  gpu_ids: '3'
+  no_cuda: False
+  # if true, use CPU only. Else use GPU
+  n_gpu: 1
+params:
+  optim: 'ADAM'
+  lr: 0.0001
+  lr_step: 5
+  lr_gamma: 0.5
+  weight_decay: 0.001
+  momentum: 0.9
+  # margin for hard triplet loss (deprecated)
+  margin: 0.1
+  img_size_w: 616
+  img_size_h: 112
