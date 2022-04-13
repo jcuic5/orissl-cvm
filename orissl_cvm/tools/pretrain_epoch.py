@@ -35,7 +35,7 @@ from torch.utils.data import DataLoader
 from orissl_cvm.tools import humanbytes
 from orissl_cvm.utils import soft_triplet_loss
 from orissl_cvm.datasets.cvact_dataset import CVACTDataset
-from orissl_cvm.tools.visualize import visualize_desc
+from orissl_cvm.tools.visualize import visualize_scores
 
 
 def pretrain_epoch(train_dataset, training_data_loader, model, 
@@ -57,12 +57,16 @@ def pretrain_epoch(train_dataset, training_data_loader, model,
 
         # unwrap the batch information
         query_gr, query_sa, label, meta = batch
+        # NOTE replace the satellite by another one, for debug
+        query_sa[0, ...] = 0
+
         indices, keys = meta['indices'], meta['keys']
         B = query_gr.shape[0]
         query_gr, query_sa, label = query_gr.to(device), query_sa.to(device), label.to(device)
 
         # forward
         output = model(query_gr, query_sa)
+        _, predicted = torch.max(output, dim=1)
 
         # NOTE visualize the descriptor for debug
         # if i % 50 == 0:
@@ -75,14 +79,17 @@ def pretrain_epoch(train_dataset, training_data_loader, model,
         loss.backward()
         optimizer.step()
 
+        # NOTE visualize score for debug
+        visualize_scores(output, label)
+
         del query_gr, query_sa
 
         batch_loss = loss.item()
         epoch_loss += batch_loss
 
         if iteration % 25 == 0 or n_batches <= 10:
-            tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch_num, iteration,
-                                                                    n_batches, batch_loss))
+            tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}, Accuracy: {:.4f}".format(
+                epoch_num, iteration, n_batches, batch_loss, (predicted == label).sum().item() / B))
             writer.add_scalar('Train/Loss', batch_loss,
                                 ((epoch_num - 1) * n_batches) + iteration)
 

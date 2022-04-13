@@ -14,7 +14,7 @@
             // train.py
             "args": [
                 // Don't forget 
-                "--config_path", "configs/train.yaml",
+                "--config_path", "configs/pretrain.yaml",
                 // "--resume_path", "work_dirs/Apr09_16-39-34_cvact_vgg16/checkpoints/checkpoint.pth.tar"
             ]
         }

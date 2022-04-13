@@ -53,7 +53,7 @@ from torch.utils.data import DataLoader
 from orissl_cvm import PACKAGE_ROOT_DIR
 from orissl_cvm.datasets.cvact_dataset_pre import CVACTDatasetPretrain
 from orissl_cvm.tools.pretrain_epoch import pretrain_epoch
-from orissl_cvm.tools.val import val
+from orissl_cvm.tools.val_cls import val_cls
 from orissl_cvm.tools import save_checkpoint
 from orissl_cvm.utils import input_transform
 from orissl_cvm.datasets.cvact_dataset import CVACTDataset
@@ -83,9 +83,9 @@ if __name__ == "__main__":
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   
     os.environ["CUDA_VISIBLE_DEVICES"] = config.train.gpu_ids
-    # os.environ["MKL_NUM_THREADS"] = config.train.threads
-    # os.environ["NUMEXPR_NUM_THREADS"] = config.train.threads
-    # os.environ["OMP_NUM_THREADS"] = config.train.threads
+    os.environ["MKL_NUM_THREADS"] = config.train.threads
+    os.environ["NUMEXPR_NUM_THREADS"] = config.train.threads
+    os.environ["OMP_NUM_THREADS"] = config.train.threads
 
     # CUDA setting
     cuda = not config.train.no_cuda
@@ -173,9 +173,9 @@ if __name__ == "__main__":
     print(f'Num of queries in training set: {len(train_dataset)}')
 
     training_data_loader = DataLoader(dataset=train_dataset, 
-        num_workers=int(config.train.threads),
+        num_workers=config.train.n_workers,
         batch_size=config.train.batch_size, 
-        shuffle=True,
+        shuffle=False,
         collate_fn = train_dataset.collate_fn, 
         pin_memory=cuda
     )
@@ -188,7 +188,13 @@ if __name__ == "__main__":
                                       transform=input_transform())
     # NOTE for debug, use train set it self to validate
     # validation_dataset = train_dataset
-
+    val_data_loader = DataLoader(dataset=validation_dataset, 
+        num_workers=config.train.n_workers,
+        batch_size=config.train.batch_size, 
+        shuffle=False,
+        collate_fn = validation_dataset.collate_fn, 
+        pin_memory=cuda
+    )
     print('===> Training query set:', len(train_dataset.qIdx))
     print('===> Evaluating on val set, query count:', len(validation_dataset.qIdx))
 
@@ -225,19 +231,19 @@ if __name__ == "__main__":
             scheduler.step(epoch)
 
         if (epoch % config.train.eval_every) == 0:
-            recalls = val(validation_dataset, model, desc_dim, device, config, writer, epoch,
+            acc = val_cls(val_data_loader, model, desc_dim, device, config, writer, epoch,
                           write_tboard=True, pbar_position=1)
-            is_best = recalls[5] > best_score
+            is_best = acc > best_score
             if is_best:
                 not_improved = 0
-                best_score = recalls[5]
+                best_score = acc
             else:
                 not_improved += 1
 
             save_checkpoint({
                 'epoch': epoch,
                 'state_dict': model.state_dict(),
-                'recalls': recalls,
+                'accuracy': acc,
                 'best_score': best_score,
                 'not_improved': not_improved,
                 'optimizer': optimizer.state_dict(),
@@ -248,7 +254,7 @@ if __name__ == "__main__":
                 print('Performance did not improve for', config.train.patience, 'epochs. Stopping.')
                 break
 
-    print("=> Best Recall@5: {:.4f}".format(best_score), flush=True)
+    print("=> Best Accuracy: {:.4f}".format(best_score), flush=True)
     writer.close()
 
     torch.cuda.empty_cache()  # garbage clean GPU memory, a bug can occur when Pytorch doesn't automatically clear the

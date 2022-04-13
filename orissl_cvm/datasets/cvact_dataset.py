@@ -93,7 +93,7 @@ class CVACTDataset(Dataset):
         if self.mode in ['train', 'val']:
             keysQ, utmQ = self.read_info(data_info_path, self.mode)
             assert(len(keysQ) != 0 and len(utmQ) != 0)
-            if mini_scale is not None or mini_scale != 1:
+            if mini_scale is not None and mini_scale != 1:
                 rand = np.random.choice(len(keysQ), int(len(keysQ)*mini_scale), replace=False)
                 keysQ = [keysQ[i] for i in rand]
                 utmQ = utmQ[rand, :]

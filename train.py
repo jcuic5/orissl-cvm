@@ -214,7 +214,7 @@ if __name__ == "__main__":
     
     for epoch in trange(config.train.start_epoch + 1, config.train.n_epochs + 1, desc='Epoch number'.rjust(15), position=0):
 
-        train_epoch(train_dataset, training_data_loader, model, optimizer, criterion, desc_dim, device, epoch, config, writer)
+        # train_epoch(train_dataset, training_data_loader, model, optimizer, criterion, desc_dim, device, epoch, config, writer)
 
         # TODO delete it later
         # torch.save(model.state_dict(), join(opt.save_file_path, "a_temp_for_debug.pth"))

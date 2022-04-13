@@ -4,7 +4,7 @@ train:
   # path to save checkpoints and logs to
   save_path: 'work_dirs'
   # full path and name (with extension) to load checkpoint from, for resuming training
-  resume_path: ''
+  resume_path: 'work_dirs/Apr10_00-43-45_cvact_vgg16/checkpoints/model_best.pth.tar'
   dataset_root_dir: 'data/CVACT_full'
   identifier: 'cvact_vgg16'
   n_epochs: 100
@@ -17,7 +17,7 @@ train:
   save_every_epoch: False
   threads: '6'
   # visible gpu ids to use
-  gpu_ids: '0'
+  gpu_ids: '4'
   no_cuda: False
   # if true, use CPU only. Else use GPU
   n_gpu: 1

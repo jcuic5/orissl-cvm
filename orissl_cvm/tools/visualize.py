@@ -87,17 +87,17 @@ def visualize_plain_batch(batch):
 
 def visualize_plain_batch_pretrain(batch):
 
-	print(batch)
 	query_gr, query_sa, label, meta = batch
 	indices, keys = meta['indices'], meta['keys']
 	B = query_gr.shape[0]
+	Bv = min(B, 4)
 
-	fig, axes = plt.subplots(nrows=B, ncols=2, figsize=(10,10*B/2))
+	fig, axes = plt.subplots(nrows=Bv, ncols=2, figsize=(10,10 * Bv / 2))
 	fig.suptitle(f'Navigate dataloader of CVACT: current batch', fontsize=12)
 	fig.tight_layout()
 	fig.subplots_adjust(top=0.9)
 
-	for i in range(B):
+	for i in range(min(B, 4)):
 		axes[i,0].imshow(np.transpose(denormalize(query_gr[i]),(1,2,0)))
 		axes[i,0].set_title(
 			f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys[i]['gr_img']}, label: {label[i]}", fontsize=8)
@@ -155,10 +155,9 @@ def visualize_dataloader_interact(training_loader):
 	# displaying button and its output together
 	widgets.VBox([button,out])
 
-def visualize_desc(desc_gr, desc_sa):
+def visualize_desc(desc_gr, desc_sa, vis_ratio=10):
 	B = desc_gr.shape[0]
 	C = desc_gr.shape[1]
-	vis_ratio = 10
 	desc_gr = F.adaptive_avg_pool1d(desc_gr.unsqueeze(1), int(C/vis_ratio)).squeeze(1)
 	desc_sa = F.adaptive_avg_pool1d(desc_sa.unsqueeze(1), int(C/vis_ratio)).squeeze(1)
 
@@ -184,5 +183,36 @@ def visualize_desc(desc_gr, desc_sa):
 		axes[i,1].set_title(f"Sample {i} ==> satellite descriptor", fontsize=8)
 		# axes[i,1].axis('off')
 		axes[i,1].get_yaxis().set_visible(False)
+
+	plt.show()
+
+def visualize_scores(scores, label, vis_ratio=1, mode='plot'):
+	logits = F.log_softmax(scores)
+	B = scores.shape[0]
+	C = scores.shape[1]
+	logits = F.adaptive_avg_pool1d(logits.unsqueeze(1), int(C/vis_ratio)).squeeze(1)
+
+	logits_cdn = logits.detach().cpu().numpy()
+
+	fig, axes = plt.subplots(nrows=min(B, 4), ncols=1, figsize=(5,5))
+	fig.suptitle(f'Output scores (after log_softmax) of current batch', fontsize=12)
+	fig.tight_layout()
+	fig.subplots_adjust(top=0.9)
+
+	if mode == 'plot':
+		for i in range(min(B, 4)):
+			axes[i].plot(range(logits_cdn[i].shape[0]), logits_cdn[i], c='b')
+			axes[i].set_title(f"Sample {i} ==> scores. The gt label is: {label[i]}", fontsize=8)
+
+	elif mode == 'cmap':
+		random = axes[0].imshow(np.random.random((1, int(C/vis_ratio))), cmap='viridis', interpolation='none')
+		fig.colorbar(random, ax=axes[0:], location='right', shrink=0.2)
+
+		for i in range(min(B, 4)):
+			im0 = axes[i].imshow(logits_cdn[i:i+1], cmap='viridis', interpolation='none')
+			axes[i].set_aspect(25)
+			axes[i].set_title(f"Sample {i} ==> scores. The gt label is: {label[i]}", fontsize=8)
+			axes[i,0].axis('off')
+			axes[i].get_yaxis().set_visible(False)
 
 	plt.show()

@@ -11,20 +11,25 @@ def random_slide_pano(img):
     H, W = img.shape[-2], img.shape[-1]
     label = random.randint(0, 35)
     slide_w = int(float(label / 36) * W)
+    # img[..., :5] = 0 # NOTE draw a dividing line for debug
     img = torch.cat([img[..., slide_w:], img[..., :slide_w]], dim=-1)
-    label = torch.zeros(36, dtype=torch.float).scatter_(dim=0, index=torch.tensor(label), value=1)
+    # NOTE one-hot encoding, but not needed
+    # label = torch.zeros(36, dtype=torch.long).scatter_(dim=0, index=torch.tensor(label), value=1)
     return img, label
 
 
 class CVACTDatasetPretrain(CVACTDataset):
-    def __init__(self, root_dir, mode='train', transform=None, posDistThr=5, negDistThr=100, positive_sampling=False, mini_scale=0.25):
+    def __init__(self, root_dir, mode='train', transform=None, posDistThr=5, negDistThr=100, positive_sampling=False, mini_scale=None):
         super().__init__(root_dir, mode, transform, posDistThr, negDistThr, positive_sampling, mini_scale)
     
     def __getitem__(self, qidx):
         key = self.qImages[qidx]
         # load images
-        query_gr, label = random_slide_pano(self.transform(Image.open(join(self.gr_path, key['gr_img']))))
-        query_sa = self.transform(Image.open(join(self.sa_path, key['sa_img'])))
+        try:
+            query_gr, label = random_slide_pano(self.transform(Image.open(join(self.gr_path, key['gr_img']))))
+            query_sa = self.transform(Image.open(join(self.sa_path, key['sa_img'])))
+        except:
+            return None
         return query_gr, query_sa, label, key, qidx
 
     @staticmethod
