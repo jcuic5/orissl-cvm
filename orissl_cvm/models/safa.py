@@ -1,4 +1,5 @@
 from turtle import forward
+from matplotlib.pyplot import axis
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,27 +7,29 @@ import torchvision.models as models
 
 
 class SPE(nn.Module):
-    def __init__(self):
+    def __init__(self, fmp_size=(7,38)):
         super(SPE, self).__init__()
-
-        # pool size=14, dimension=8
-        self.pool = nn.AdaptiveMaxPool2d((14, 14))
-        self.fc1 = nn.Linear(14*14, int(14*14*8/2), bias=True)
-        self.fc2 = nn.Linear(int(14*14*8/2), 14*14*8, bias=True)
+        H, W = fmp_size
+        self.fc1 = nn.Linear(H*W, H*W//2, bias=True)
+        self.fc2 = nn.Linear(H*W//2, H*W, bias=True)
 
     def forward(self, fmp):
+        B, C, H, W = fmp.shape
         # max pool
-        fmp_pooled = self.pool(fmp)
-        B, C, H, W = fmp_pooled.shape
+        fmp_pooled, _ = fmp.max(axis=-3, keepdim=False) #(B, H, W)
         # spatial-aware improtance generator
-        x = torch.mean(fmp_pooled, dim=1).flatten(start_dim=-2, end_dim=-1)
+        x = fmp_pooled.flatten(start_dim=-2, end_dim=-1) #(B, H*W)
         x = self.fc2(self.fc1(x)).reshape(B, -1, H*W) #(B, D, H*W)
         # aggregate
-        fmp_pooled = fmp_pooled.flatten(start_dim=-2, end_dim=-1) #(B, C, H*W)
-        feat = torch.einsum('bci,bdi->bdc', fmp_pooled, x) #(B, C, D): frobenius on each C, D
-        feat = feat.flatten(start_dim=-2, end_dim=-1) #(B, C*D)
+        fmp = fmp.flatten(start_dim=-2, end_dim=-1) #(B, C, H*W)
 
-        return F.normalize(feat, p=2, dim=1)
+        # feat = torch.einsum('bci,bdi->bdc', fmp_pooled, x) #(B, C, D)
+        # feat = feat.flatten(start_dim=-2, end_dim=-1) #(B, C*D)
+        # feat = F.normalize(feat, p=2, dim=1)
+
+        feat = torch.mul(fmp, x).sum(dim=-1)
+
+        return feat
 
 
 class SAFAvgg16(nn.Module):
@@ -34,8 +37,7 @@ class SAFAvgg16(nn.Module):
         super(SAFAvgg16, self).__init__()
         # settings
         self.encoder_dim = 512
-        self.spe_dim = 8
-        self.num_spes = 1
+        self.num_spes = 8
         self.desc_dim = self.encoder_dim * self.spe_dim * self.num_spes #default: 4096
 
         self.nn_model_gr = self.get_model()
@@ -65,12 +67,13 @@ class SAFAvgg16(nn.Module):
         return enc
 
     def forward(self, x1, x2):
-        desc = []
+        descriptor = []
         for nn_model, x in zip((self.nn_model_gr, self.nn_model_sa), (x1, x2)):
             enc = nn_model.encoder(x)
-            desc.append(torch.cat([spe_i(enc) for spe_i in nn_model.spe.children()], dim=1))
+            desc = torch.cat([spe_i(enc) for spe_i in nn_model.spe.children()], dim=1)
+            descriptor.append(F.normalize(desc, p=2, dim=1))
 
-        return tuple(desc)
+        return tuple(descriptor)
 
 
 class SAFAvgg16Cls(nn.Module):
@@ -85,7 +88,7 @@ class SAFAvgg16Cls(nn.Module):
             nn.Linear(4096, 1024, bias=True),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
-            nn.Linear(1024, 36, bias=True)
+            nn.Linear(1024, 4, bias=True)
         )
 
     def forward(self, x1, x2):

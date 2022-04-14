@@ -37,12 +37,12 @@ def val_cls(eval_loader, model, desc_dim, device, config, writer, epoch_num=0, w
             total += B
             correct += (predicted == label).sum().item()
 
-            if iteration % 1 == 0:
+            if iteration % 25 == 0:
                 tqdm.write("====> Batch accuracy: {:.4f}".format((predicted == label).sum().item() / B))
 
             # NOTE visualize batch and score for debug
-            visualize_plain_batch_pretrain(batch)
-            visualize_scores(output, label)
+            # visualize_plain_batch_pretrain(batch)
+            # visualize_scores(output, label)
 
     acc = correct / total
     tqdm.write("====> Accuracy on validation set: {:.4f}".format(acc))

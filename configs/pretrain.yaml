@@ -4,8 +4,8 @@ train:
   # path to save checkpoints and logs to
   save_path: 'work_dirs_for_debug'
   # full path and name (with extension) to load checkpoint from, for resuming training
-  resume_path: 'work_dirs/Apr13_01-44-46_cvact_vgg16_pretrain/checkpoints/checkpoint.pth.tar'
-  # resume_path: ''
+  # resume_path: 'work_dirs/Apr13_01-44-46_cvact_vgg16_pretrain/checkpoints/checkpoint.pth.tar'
+  resume_path: ''
   dataset_root_dir: 'data/CVACT_full'
   identifier: 'cvact_vgg16_pretrain'
   n_epochs: 300

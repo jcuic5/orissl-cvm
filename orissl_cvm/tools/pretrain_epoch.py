@@ -44,7 +44,6 @@ def pretrain_epoch(train_dataset, training_data_loader, model,
         
     epoch_loss = 0
     n_batches = (len(train_dataset.qIdx) + config.train.batch_size - 1) // config.train.batch_size
-    repeat = train_dataset.gr_rep
 
     model.train()
     for iteration, batch in enumerate(tqdm(training_data_loader, 
@@ -59,7 +58,7 @@ def pretrain_epoch(train_dataset, training_data_loader, model,
         # unwrap the batch information
         query_gr, query_sa, label, meta = batch
         # NOTE replace the satellite by another one, for debug
-        query_sa[...] = 0
+        # query_sa[...] = 0
 
         indices, keys = meta['indices'], meta['keys']
         B = query_sa.shape[0]

@@ -36,16 +36,6 @@ from sklearn.neighbors import NearestNeighbors
 import random
 
 
-def random_slide_pano(img):
-    H, W = img.shape[-2], img.shape[-1]
-    label = random.randint(0, 35)
-    slide_w = int(float(label / 36) * W)
-    # img[..., :5] = 0 # NOTE draw a dividing line for debug
-    img = torch.cat([img[..., slide_w:], img[..., :slide_w]], dim=-1)
-    # NOTE one-hot encoding, but not needed
-    # label = torch.zeros(36, dtype=torch.long).scatter_(dim=0, index=torch.tensor(label), value=1)
-    return img, label
-
 class ImagePairsFromList(Dataset):
     def __init__(self, root_dir, images, transform):
         self.root_dir = root_dir
@@ -73,7 +63,7 @@ class ImagePairsFromList(Dataset):
 
 class CVACTDataset(Dataset):
     def __init__(self, root_dir, mode='train', transform=None, posDistThr=5, 
-                 negDistThr=100, positive_sampling=False, mini_scale=None, 
+                 negDistThr=10, positive_sampling=False, mini_scale=None, 
                  task='cvm'):
 
         # initializing
@@ -96,10 +86,10 @@ class CVACTDataset(Dataset):
         self.task = task
         # other
         self.transform = transform
-        self.gr_rep = 4
+        self.num_dirs = 4
 
         # load data
-        data_info_path = join(sys.path[0], 'assets/CVACT_infos_mini')
+        data_info_path = join(sys.path[0], 'assets/CVACT_infos')
         if self.mode in ['train', 'val']:
             keysQ, utmQ = self.read_info(data_info_path, self.mode)
             assert(len(keysQ) != 0 and len(utmQ) != 0)
@@ -208,6 +198,17 @@ class CVACTDataset(Dataset):
         # print weight information
         pass
 
+    def random_slide_pano(self, img, label=None):
+        H, W = img.shape[-2], img.shape[-1]
+        if label == None:
+            label = random.randint(0, self.num_dirs)
+        slide_w = int(float(label / self.num_dirs) * W)
+        # img[..., :5] = 0 # NOTE draw a dividing line for debug
+        img = torch.cat([img[..., slide_w:], img[..., :slide_w]], dim=-1)
+        # NOTE one-hot encoding, but not needed
+        # label = torch.zeros(36, dtype=torch.long).scatter_(dim=0, index=torch.tensor(label), value=1)
+        return img, label
+
     def __getitem__(self, qidx):
         key = self.qImages[qidx]
 
@@ -225,20 +226,22 @@ class CVACTDataset(Dataset):
             return query_gr, query_sa, key, qidx
 
         elif self.task == 'ssl':
+            query_gr, query_sa, label = [], [], []
             # load images
             try:
-                query_gr, label = zip(*[
-                    random_slide_pano(self.transform(Image.open(join(self.gr_path, key['gr_img'])))) 
-                    for i in range(self.gr_rep)])
-                query_gr, label = list(query_gr), list(label)
-                # query_sa = [self.transform(Image.open(join(self.sa_path, key['sa_img'])))] * self.gr_rep
-                query_sa, _ = zip(*[
-                    random_slide_pano(self.transform(Image.open(join(self.sa_path, key['sa_img'])))) 
-                    for i in range(self.gr_rep)])
-                key = [key] * self.gr_rep
-                qidx = [qidx] * self.gr_rep
+                gr_img = Image.open(join(self.gr_path, key['gr_img']))
+                sa_img = Image.open(join(self.sa_path, key['sa_img']))
             except:
                 return None
+            for i in range(self.num_dirs):
+                for j in range(self.num_dirs):
+                    q_gr, l_gr = self.random_slide_pano(self.transform(gr_img), label=i)
+                    query_gr.append(q_gr)
+                    q_sa, l_sa = self.random_slide_pano(self.transform(sa_img), label=j)
+                    query_sa.append(q_sa)
+                    label.append(l_gr - l_sa if l_gr - l_sa >= 0 else l_gr - l_sa + self.num_dirs)
+            key = [key] * self.num_dirs**2
+            qidx = [qidx] * self.num_dirs**2
             return query_gr, query_sa, label, key, qidx
 
     def __len__(self):

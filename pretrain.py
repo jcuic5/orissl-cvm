@@ -175,7 +175,7 @@ if __name__ == "__main__":
     training_data_loader = DataLoader(dataset=train_dataset, 
         num_workers=config.train.n_workers,
         batch_size=config.train.batch_size, 
-        shuffle=False,# TODO for debug. switch it back later
+        shuffle=True,# TODO for debug. switch it back later
         collate_fn=train_dataset.collate_fn_ssl, 
         pin_memory=cuda
     )
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     
     for epoch in trange(config.train.start_epoch + 1, config.train.n_epochs + 1, desc='Epoch number'.rjust(15), position=0):
 
-        # pretrain_epoch(train_dataset, training_data_loader, model, optimizer, criterion, desc_dim, device, epoch, config, writer)
+        pretrain_epoch(train_dataset, training_data_loader, model, optimizer, criterion, desc_dim, device, epoch, config, writer)
 
         # TODO delete it later
         # torch.save(model.state_dict(), join(opt.save_file_path, "a_temp_for_debug.pth"))

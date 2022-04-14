@@ -2,9 +2,10 @@ train:
   seed: 123
   batch_size: 8
   # path to save checkpoints and logs to
-  save_path: 'work_dirs'
+  save_path: 'work_dirs_for_debug'
   # full path and name (with extension) to load checkpoint from, for resuming training
-  resume_path: 'work_dirs/Apr10_00-43-45_cvact_vgg16/checkpoints/model_best.pth.tar'
+  # resume_path: 'work_dirs/Apr10_00-43-45_cvact_vgg16/checkpoints/model_best.pth.tar'
+  resume_path: ''
   dataset_root_dir: 'data/CVACT_full'
   identifier: 'cvact_vgg16'
   n_epochs: 100
