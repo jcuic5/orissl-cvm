@@ -33,6 +33,18 @@ import torch
 from torch.utils.data import Dataset
 import torch.utils.data as data
 from sklearn.neighbors import NearestNeighbors
+import random
+
+
+def random_slide_pano(img):
+    H, W = img.shape[-2], img.shape[-1]
+    label = random.randint(0, 35)
+    slide_w = int(float(label / 36) * W)
+    # img[..., :5] = 0 # NOTE draw a dividing line for debug
+    img = torch.cat([img[..., slide_w:], img[..., :slide_w]], dim=-1)
+    # NOTE one-hot encoding, but not needed
+    # label = torch.zeros(36, dtype=torch.long).scatter_(dim=0, index=torch.tensor(label), value=1)
+    return img, label
 
 class ImagePairsFromList(Dataset):
     def __init__(self, root_dir, images, transform):
@@ -61,35 +73,33 @@ class ImagePairsFromList(Dataset):
 
 class CVACTDataset(Dataset):
     def __init__(self, root_dir, mode='train', transform=None, posDistThr=5, 
-                 negDistThr=100, positive_sampling=False, mini_scale=None):
+                 negDistThr=100, positive_sampling=False, mini_scale=None, 
+                 task='cvm'):
 
         # initializing
         assert mode in ('train', 'val', 'test')
-
+        assert task in ('cvm', 'ssl')
         self.root_dir = root_dir
         self.gr_path = join(self.root_dir, 'streetview')
         self.sa_path = join(self.root_dir, 'polarmap')
-
         self.qImages = []
         self.qIdx = []
         self.pIdx = []
         self.nonNegIdx = []
         self.qEndPosList = []
         self.all_pos_indices = []
-
         # hyper-parameters
         self.posDistThr = posDistThr
         self.negDistThr = negDistThr
-
         # flags
         self.mode = mode
-
+        self.task = task
         # other
         self.transform = transform
+        self.gr_rep = 4
 
         # load data
         data_info_path = join(sys.path[0], 'assets/CVACT_infos_mini')
-
         if self.mode in ['train', 'val']:
             keysQ, utmQ = self.read_info(data_info_path, self.mode)
             assert(len(keysQ) != 0 and len(utmQ) != 0)
@@ -200,23 +210,42 @@ class CVACTDataset(Dataset):
 
     def __getitem__(self, qidx):
         key = self.qImages[qidx]
-        # load images
-        try:
-            query_gr = self.transform(Image.open(join(self.gr_path, key['gr_img'])))
-            query_sa = self.transform(Image.open(join(self.sa_path, key['sa_img'])))
-        except:
-            # NOTE errors might met: 
-            # FileNotFoundError, OSError: image file is truncated
-            # https://stackoverflow.com/a/23575424 could solve the truncated issue 
-            # but we choose directly not to use the sample
-            return None
-        return query_gr, query_sa, key, qidx
+
+        if self.task == 'cvm':
+            # load images
+            try:
+                query_gr = self.transform(Image.open(join(self.gr_path, key['gr_img'])))
+                query_sa = self.transform(Image.open(join(self.sa_path, key['sa_img'])))
+            except:
+                # NOTE errors might met: 
+                # FileNotFoundError, OSError: image file is truncated
+                # https://stackoverflow.com/a/23575424 could solve the truncated issue 
+                # but we choose directly not to use the sample
+                return None
+            return query_gr, query_sa, key, qidx
+
+        elif self.task == 'ssl':
+            # load images
+            try:
+                query_gr, label = zip(*[
+                    random_slide_pano(self.transform(Image.open(join(self.gr_path, key['gr_img'])))) 
+                    for i in range(self.gr_rep)])
+                query_gr, label = list(query_gr), list(label)
+                # query_sa = [self.transform(Image.open(join(self.sa_path, key['sa_img'])))] * self.gr_rep
+                query_sa, _ = zip(*[
+                    random_slide_pano(self.transform(Image.open(join(self.sa_path, key['sa_img'])))) 
+                    for i in range(self.gr_rep)])
+                key = [key] * self.gr_rep
+                qidx = [qidx] * self.gr_rep
+            except:
+                return None
+            return query_gr, query_sa, label, key, qidx
 
     def __len__(self):
         return self.length
 
     @staticmethod
-    def collate_fn(batch, qpn_matrix):
+    def collate_fn_cvm(batch, qpn_matrix):
         if None in batch:
             return None
         query_gr, query_sa, key, qidx = zip(*batch)
@@ -232,3 +261,20 @@ class CVACTDataset(Dataset):
         }
         return query_gr, query_sa, meta
 
+    @staticmethod
+    def collate_fn_ssl(batch):
+        if None in batch:
+            return None
+        query_gr, query_sa, label, key, qidx = zip(*batch)
+        stack = lambda x : data.dataloader.default_collate(
+                        [var for sample in x for var in sample])
+        query_gr = stack(query_gr)
+        query_sa = stack(query_sa)
+        label = stack(label)
+        qidx = [var for sample in list(qidx) for var in sample]
+        key = [var for sample in list(key) for var in sample]
+        meta = {
+            'indices': qidx,
+            'keys': key
+        }
+        return query_gr, query_sa, label, meta

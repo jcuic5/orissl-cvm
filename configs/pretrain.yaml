@@ -19,7 +19,7 @@ train:
   threads: '6'
   n_workers: 0
   # visible gpu ids to use
-  gpu_ids: '1'
+  gpu_ids: '2'
   no_cuda: False
   # if true, use CPU only. Else use GPU
   n_gpu: 1

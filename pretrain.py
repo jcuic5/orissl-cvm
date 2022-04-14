@@ -51,7 +51,6 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 from orissl_cvm import PACKAGE_ROOT_DIR
-from orissl_cvm.datasets.cvact_dataset_pre import CVACTDatasetPretrain
 from orissl_cvm.tools.pretrain_epoch import pretrain_epoch
 from orissl_cvm.tools.val_cls import val_cls
 from orissl_cvm.tools import save_checkpoint
@@ -166,33 +165,35 @@ if __name__ == "__main__":
     
     # Dataset and dataloader
     print('===> Loading dataset(s)')
-    train_dataset = CVACTDatasetPretrain(config.train.dataset_root_dir, 
-                                        mode='train', 
-                                        transform=input_transform())
+    train_dataset = CVACTDataset(config.train.dataset_root_dir, 
+                                 mode='train', 
+                                 transform=input_transform(),
+                                 task='ssl')
     print(f'Full num of images in training set: {train_dataset.qImages.shape[0]}')
     print(f'Num of queries in training set: {len(train_dataset)}')
 
     training_data_loader = DataLoader(dataset=train_dataset, 
         num_workers=config.train.n_workers,
         batch_size=config.train.batch_size, 
-        shuffle=False,
-        collate_fn = train_dataset.collate_fn, 
+        shuffle=False,# TODO for debug. switch it back later
+        collate_fn=train_dataset.collate_fn_ssl, 
         pin_memory=cuda
     )
 
     # NOTE visualize batches for debug
-    visualize_dataloader(training_data_loader)
+    # visualize_dataloader(training_data_loader)
 
-    validation_dataset = CVACTDatasetPretrain(config.train.dataset_root_dir, 
+    validation_dataset = CVACTDataset(config.train.dataset_root_dir, 
                                       mode='val', 
-                                      transform=input_transform())
+                                      transform=input_transform(),
+                                      task='ssl')
     # NOTE for debug, use train set it self to validate
     # validation_dataset = train_dataset
     val_data_loader = DataLoader(dataset=validation_dataset, 
         num_workers=config.train.n_workers,
         batch_size=config.train.batch_size, 
         shuffle=False,
-        collate_fn = validation_dataset.collate_fn, 
+        collate_fn=validation_dataset.collate_fn_ssl, 
         pin_memory=cuda
     )
     print('===> Training query set:', len(train_dataset.qIdx))
@@ -221,7 +222,7 @@ if __name__ == "__main__":
     
     for epoch in trange(config.train.start_epoch + 1, config.train.n_epochs + 1, desc='Epoch number'.rjust(15), position=0):
 
-        pretrain_epoch(train_dataset, training_data_loader, model, optimizer, criterion, desc_dim, device, epoch, config, writer)
+        # pretrain_epoch(train_dataset, training_data_loader, model, optimizer, criterion, desc_dim, device, epoch, config, writer)
 
         # TODO delete it later
         # torch.save(model.state_dict(), join(opt.save_file_path, "a_temp_for_debug.pth"))
@@ -231,6 +232,7 @@ if __name__ == "__main__":
             scheduler.step(epoch)
 
         if (epoch % config.train.eval_every) == 0:
+            # NOTE for debugging use training_data_loader
             acc = val_cls(val_data_loader, model, desc_dim, device, config, writer, epoch,
                           write_tboard=True, pbar_position=1)
             is_best = acc > best_score

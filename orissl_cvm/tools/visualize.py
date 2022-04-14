@@ -90,14 +90,14 @@ def visualize_plain_batch_pretrain(batch):
 	query_gr, query_sa, label, meta = batch
 	indices, keys = meta['indices'], meta['keys']
 	B = query_gr.shape[0]
-	Bv = min(B, 4)
+	Bv = min(B, 6)
 
 	fig, axes = plt.subplots(nrows=Bv, ncols=2, figsize=(10,10 * Bv / 2))
 	fig.suptitle(f'Navigate dataloader of CVACT: current batch', fontsize=12)
 	fig.tight_layout()
 	fig.subplots_adjust(top=0.9)
 
-	for i in range(min(B, 4)):
+	for i in range(Bv):
 		axes[i,0].imshow(np.transpose(denormalize(query_gr[i]),(1,2,0)))
 		axes[i,0].set_title(
 			f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys[i]['gr_img']}, label: {label[i]}", fontsize=8)
@@ -187,20 +187,21 @@ def visualize_desc(desc_gr, desc_sa, vis_ratio=10):
 	plt.show()
 
 def visualize_scores(scores, label, vis_ratio=1, mode='plot'):
-	logits = F.log_softmax(scores)
+	logits = F.log_softmax(scores, dim=1)
 	B = scores.shape[0]
 	C = scores.shape[1]
+	Bv = min(B, 6)
 	logits = F.adaptive_avg_pool1d(logits.unsqueeze(1), int(C/vis_ratio)).squeeze(1)
 
 	logits_cdn = logits.detach().cpu().numpy()
 
-	fig, axes = plt.subplots(nrows=min(B, 4), ncols=1, figsize=(5,5))
+	fig, axes = plt.subplots(nrows=Bv, ncols=1, figsize=(5,5))
 	fig.suptitle(f'Output scores (after log_softmax) of current batch', fontsize=12)
 	fig.tight_layout()
 	fig.subplots_adjust(top=0.9)
 
 	if mode == 'plot':
-		for i in range(min(B, 4)):
+		for i in range(Bv):
 			axes[i].plot(range(logits_cdn[i].shape[0]), logits_cdn[i], c='b')
 			axes[i].set_title(f"Sample {i} ==> scores. The gt label is: {label[i]}", fontsize=8)
 
@@ -208,7 +209,7 @@ def visualize_scores(scores, label, vis_ratio=1, mode='plot'):
 		random = axes[0].imshow(np.random.random((1, int(C/vis_ratio))), cmap='viridis', interpolation='none')
 		fig.colorbar(random, ax=axes[0:], location='right', shrink=0.2)
 
-		for i in range(min(B, 4)):
+		for i in range(Bv):
 			im0 = axes[i].imshow(logits_cdn[i:i+1], cmap='viridis', interpolation='none')
 			axes[i].set_aspect(25)
 			axes[i].set_title(f"Sample {i} ==> scores. The gt label is: {label[i]}", fontsize=8)
