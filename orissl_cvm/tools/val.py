@@ -39,16 +39,16 @@ from orissl_cvm.utils import input_transform
 from orissl_cvm.tools.visualize import visualize_desc
 
 
-def val(eval_set, model, desc_dim, device, config, writer, epoch_num=0, write_tboard=False, pbar_position=0):
+def val(eval_set, model, desc_dim, device, cfg, writer, epoch_num=0, write_tboard=False, pbar_position=0):
     if device.type == 'cuda':
         cuda = True
     else:
         cuda = False
     eval_set_queries = ImagePairsFromList(eval_set.root_dir, eval_set.qImages, transform=input_transform())
     opt = {
-        'batch_size': config.train.batch_size, 
+        'batch_size': cfg.train.batch_size, 
         'shuffle': False, 
-        'num_workers': int(config.train.threads), 
+        'num_workers': cfg.train.n_workers, 
         'pin_memory': cuda, 
         'collate_fn': ImagePairsFromList.collate_fn
     }
@@ -63,7 +63,7 @@ def val(eval_set, model, desc_dim, device, config, writer, epoch_num=0, write_tb
         for iteration, batch in enumerate(tqdm(test_data_loader_queries, 
                 position=pbar_position, leave=False, desc='Test Iter'.rjust(15)), 1):
             if batch is None: 
-                tqdm.write('====> Batch data iteration is None. Probably caused by corrupted file')
+                tqdm.write('====> Current batch is None')
                 continue
             img_gr, img_sa, indices = batch
             img_gr, img_sa = img_gr.to(device), img_sa.to(device)

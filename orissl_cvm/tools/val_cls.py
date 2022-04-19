@@ -9,7 +9,7 @@ from orissl_cvm.tools.visualize import visualize_desc
 from orissl_cvm.tools.visualize import visualize_scores, visualize_plain_batch_pretrain
 
 
-def val_cls(eval_loader, model, desc_dim, device, config, writer, epoch_num=0, write_tboard=False, pbar_position=0):
+def val_cls(eval_loader, model, device, cfg, writer, epoch_num=0, write_tboard=False, pbar_position=0):
     if device.type == 'cuda':
         cuda = True
     else:
@@ -37,7 +37,7 @@ def val_cls(eval_loader, model, desc_dim, device, config, writer, epoch_num=0, w
             total += B
             correct += (predicted == label).sum().item()
 
-            if iteration % 25 == 0:
+            if iteration % 1 == 0:
                 tqdm.write("====> Batch accuracy: {:.4f}".format((predicted == label).sum().item() / B))
 
             # NOTE visualize batch and score for debug

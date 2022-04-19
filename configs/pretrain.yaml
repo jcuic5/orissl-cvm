@@ -1,6 +1,6 @@
 train:
   seed: 123
-  batch_size: 4
+  batch_size: 1
   # path to save checkpoints and logs to
   save_path: 'work_dirs_for_debug'
   # full path and name (with extension) to load checkpoint from, for resuming training
@@ -12,7 +12,7 @@ train:
   # manual epoch number (useful on restarts)
   start_epoch: 0
   # validation and save ckpt for every #
-  eval_every: 10
+  eval_every: 1
   patience: 0
   # flag to set a separate checkpoint file for each new epoch
   save_every_epoch: False

@@ -39,7 +39,7 @@ from orissl_cvm.tools.visualize import visualize_desc
 
 
 def train_epoch(train_dataset, training_data_loader, model, 
-                optimizer, criterion, encoder_dim, device, 
+                optimizer, criterion, device, 
                 epoch_num, config, writer):
         
     epoch_loss = 0
@@ -52,7 +52,7 @@ def train_epoch(train_dataset, training_data_loader, model,
                                             desc='Train Iter'.rjust(15))):
         # in case we get an empty batch
         if batch is None:
-            tqdm.write('====> Batch data iteration is None. Probably caused by corrupted file')
+            tqdm.write('==> Current batch is None')
             continue
 
         # unwrap the batch information
@@ -92,7 +92,7 @@ def train_epoch(train_dataset, training_data_loader, model,
         batch_loss = loss.item()
         epoch_loss += batch_loss
 
-        if iteration % 25 == 0 or n_batches <= 10:
+        if iteration % 100 == 0 or n_batches <= 10:
             tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch_num, iteration,
                                                                     n_batches, batch_loss))
             writer.add_scalar('Train/Loss', batch_loss,

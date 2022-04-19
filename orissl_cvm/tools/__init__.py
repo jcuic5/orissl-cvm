@@ -32,6 +32,7 @@ import shutil
 from os.path import join
 from PIL import Image
 import logging
+from easydict import EasyDict
 
 
 def pca(x: np.ndarray, num_pcs=None, subtract_mean=True):
@@ -137,3 +138,12 @@ def create_logger(log_file=None, rank=0, log_level=logging.INFO):
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
     return logger
+
+def log_config_to_file(cfg, pre='cfg', logger=None):
+    # NOTE code from OpenPCDet
+    for key, val in cfg.items():
+        if isinstance(cfg[key], EasyDict):
+            logger.info('\n%s.%s = edict()' % (pre, key))
+            log_config_to_file(cfg[key], pre=pre + '.' + key, logger=logger)
+            continue
+        logger.info('%s.%s: %s' % (pre, key, val))

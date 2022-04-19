@@ -2,7 +2,7 @@ train:
   seed: 123
   batch_size: 8
   # path to save checkpoints and logs to
-  save_path: 'work_dirs_for_debug'
+  save_path: 'work_dirs'
   # full path and name (with extension) to load checkpoint from, for resuming training
   # resume_path: 'work_dirs/Apr10_00-43-45_cvact_vgg16/checkpoints/model_best.pth.tar'
   resume_path: ''
@@ -12,13 +12,14 @@ train:
   # manual epoch number (useful on restarts)
   start_epoch: 0
   # validation and save ckpt for every #
-  eval_every: 1
+  eval_every: 2
   patience: 10
   # flag to set a separate checkpoint file for each new epoch
   save_every_epoch: False
   threads: '6'
+  n_workers: 6
   # visible gpu ids to use
-  gpu_ids: '4'
+  gpu_ids: '2'
   no_cuda: False
   # if true, use CPU only. Else use GPU
   n_gpu: 1

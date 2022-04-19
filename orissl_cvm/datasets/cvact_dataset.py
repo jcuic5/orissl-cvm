@@ -62,8 +62,8 @@ class ImagePairsFromList(Dataset):
 
 
 class CVACTDataset(Dataset):
-    def __init__(self, root_dir, mode='train', transform=None, posDistThr=5, 
-                 negDistThr=10, positive_sampling=False, mini_scale=None, 
+    def __init__(self, root_dir, mode, transform, logger, posDistThr=5, 
+                 negDistThr=5, positive_sampling=False, mini_scale=None, 
                  task='cvm'):
 
         # initializing
@@ -87,9 +87,10 @@ class CVACTDataset(Dataset):
         # other
         self.transform = transform
         self.num_dirs = 4
+        self.logger = logger
 
         # load data
-        data_info_path = join(sys.path[0], 'assets/CVACT_infos')
+        data_info_path = join(sys.path[0], 'assets/CVACT_infos_1')
         if self.mode in ['train', 'val']:
             keysQ, utmQ = self.read_info(data_info_path, self.mode)
             assert(len(keysQ) != 0 and len(utmQ) != 0)
@@ -103,14 +104,14 @@ class CVACTDataset(Dataset):
 
             # find positive images for training
             neigh = NearestNeighbors(algorithm='kd_tree')
-            print(f'Construct neighbor searches for {self.mode} set: {neigh.algorithm}')
+            self.logger.info(f'Construct neighbor searches for {self.mode} set: {neigh.algorithm}')
             neigh.fit(utmQ)
             pos_distances, pos_indices = neigh.radius_neighbors(utmQ, self.posDistThr)
-            print(f'Finding positive neighbors for {utmQ.shape[0]} queries')
+            self.logger.info(f'Finding positive neighbors for {utmQ.shape[0]} queries')
             self.all_pos_indices.extend(pos_indices)
 
             if self.mode == 'train':
-                print(f'Finding non-negative neighbors for {utmQ.shape[0]} queries')
+                self.logger.info(f'Finding non-negative neighbors for {utmQ.shape[0]} queries')
                 nnD, nnI = neigh.radius_neighbors(utmQ, self.negDistThr)
 
             for q_idx in range(len(keysQ)):
@@ -141,8 +142,8 @@ class CVACTDataset(Dataset):
             self.qIdx.extend(list(range(len(keysQ))))
 
         if len(self.qImages) == 0:
-            print("Exiting...")
-            print("No query images.")
+            self.logger.info("Exiting...")
+            self.logger.info("No query images.")
             sys.exit()
 
         # cast to np.arrays for indexing during training
@@ -202,7 +203,7 @@ class CVACTDataset(Dataset):
         H, W = img.shape[-2], img.shape[-1]
         if label == None:
             label = random.randint(0, self.num_dirs)
-        slide_w = int(float(label / self.num_dirs) * W)
+        slide_w = int(float(1 - label / self.num_dirs) * W)
         # img[..., :5] = 0 # NOTE draw a dividing line for debug
         img = torch.cat([img[..., slide_w:], img[..., :slide_w]], dim=-1)
         # NOTE one-hot encoding, but not needed
@@ -233,8 +234,8 @@ class CVACTDataset(Dataset):
                 sa_img = Image.open(join(self.sa_path, key['sa_img']))
             except:
                 return None
-            for i in range(self.num_dirs):
-                for j in range(self.num_dirs):
+            for j in range(self.num_dirs):
+                for i in range(self.num_dirs):
                     q_gr, l_gr = self.random_slide_pano(self.transform(gr_img), label=i)
                     query_gr.append(q_gr)
                     q_sa, l_sa = self.random_slide_pano(self.transform(sa_img), label=j)

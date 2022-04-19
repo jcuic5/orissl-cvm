@@ -39,60 +39,60 @@ from orissl_cvm.tools.visualize import visualize_scores, visualize_plain_batch_p
 
 
 def pretrain_epoch(train_dataset, training_data_loader, model, 
-                optimizer, criterion, encoder_dim, device, 
+                optimizer, criterion, device, 
                 epoch_num, config, writer):
         
     epoch_loss = 0
     n_batches = (len(train_dataset.qIdx) + config.train.batch_size - 1) // config.train.batch_size
 
     model.train()
-    for iteration, batch in enumerate(tqdm(training_data_loader, 
-                                            position=1, 
-                                            leave=False, 
-                                            desc='Train Iter'.rjust(15))):
-        # in case we get an empty batch
-        if batch is None:
-            tqdm.write('====> Batch data iteration is None. Probably caused by corrupted file')
-            continue
+    for i in range(10):
+        for iteration, batch in enumerate(tqdm(training_data_loader, 
+                                                position=1, 
+                                                leave=False, 
+                                                desc='Train Iter'.rjust(15))):
+            # in case we get an empty batch
+            if batch is None:
+                tqdm.write('====> Batch data iteration is None. Probably caused by corrupted file')
+                continue
 
-        # unwrap the batch information
-        query_gr, query_sa, label, meta = batch
-        # NOTE replace the satellite by another one, for debug
-        # query_sa[...] = 0
+            # unwrap the batch information
+            query_gr, query_sa, label, meta = batch
+            # NOTE replace the satellite by another one, for debug
+            # query_sa[...] = 0
 
-        indices, keys = meta['indices'], meta['keys']
-        B = query_sa.shape[0]
-        query_gr, query_sa, label = query_gr.to(device), query_sa.to(device), label.to(device)
+            indices, keys = meta['indices'], meta['keys']
+            B = query_sa.shape[0]
+            query_gr, query_sa, label = query_gr.to(device), query_sa.to(device), label.to(device)
+            # forward
+            output = model(query_gr, query_sa)
+            _, predicted = torch.max(output, dim=1)
 
-        # forward
-        output = model(query_gr, query_sa)
-        _, predicted = torch.max(output, dim=1)
+            # NOTE visualize the descriptor for debug
+            # if i % 50 == 0:
+                # visualize_desc(descQ_gr, descQ_sa)
 
-        # NOTE visualize the descriptor for debug
-        # if i % 50 == 0:
-            # visualize_desc(descQ_gr, descQ_sa)
+            # calculate loss, back propagate, update weights
+            optimizer.zero_grad()
+            loss = criterion(output, label)
+            loss /= B
+            loss.backward()
+            optimizer.step()
 
-        # calculate loss, back propagate, update weights
-        optimizer.zero_grad()
-        loss = criterion(output, label)
-        loss /= B
-        loss.backward()
-        optimizer.step()
+            # NOTE visualize batch and score for debug
+            # visualize_plain_batch_pretrain(batch)
+            # visualize_scores(output, label)
 
-        # NOTE visualize batch and score for debug
-        # visualize_plain_batch_pretrain(batch)
-        # visualize_scores(output, label)
+            del query_gr, query_sa
 
-        del query_gr, query_sa
+            batch_loss = loss.item()
+            epoch_loss += batch_loss
 
-        batch_loss = loss.item()
-        epoch_loss += batch_loss
-
-        if iteration % 25 == 0 or n_batches <= 10:
-            tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}, Accuracy: {:.4f}".format(
-                epoch_num, iteration, n_batches, batch_loss, (predicted == label).sum().item() / B))
-            writer.add_scalar('Train/Loss', batch_loss,
-                                ((epoch_num - 1) * n_batches) + iteration)
+            if iteration % 1 == 0 or n_batches <= 10:
+                tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}, Accuracy: {:.4f}".format(
+                    epoch_num, iteration, n_batches, batch_loss, (predicted == label).sum().item() / B))
+                writer.add_scalar('Train/Loss', batch_loss,
+                                    ((epoch_num - 1) * n_batches) + iteration)
 
     avg_loss = epoch_loss / n_batches
     tqdm.write("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch_num, avg_loss))

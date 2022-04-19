@@ -27,20 +27,6 @@ def soft_triplet_loss(a, p, n, gamma=10.0):
     return loss
 
 
-def _initialize_weights(nn_model):
-    for m in nn_model.modules():
-        if isinstance(m, nn.Conv2d):
-            nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-            if m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.BatchNorm2d):
-            nn.init.constant_(m.weight, 1)
-            nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.Linear):
-            nn.init.normal_(m.weight, 0, 0.01)
-            nn.init.constant_(m.bias, 0)
-
-
 class SimSiamTransform():
     def __init__(self, image_size, mean_std=imagenet_mean_std):
         image_size = 224 if image_size is None else image_size # by default simsiam use image size 224

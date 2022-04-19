@@ -4,6 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
+from datetime import datetime
+from orissl_cvm import PACKAGE_ROOT_DIR
+from os.path import join
+import sys
 
 def denormalize(im):
 	image = im.numpy()
@@ -163,7 +167,7 @@ def visualize_desc(desc_gr, desc_sa, vis_ratio=10):
 
 	desc_gr_cdn, desc_sa_cdn = desc_gr.detach().cpu().numpy(), desc_sa.detach().cpu().numpy()
 
-	fig, axes = plt.subplots(nrows=B, ncols=2, figsize=(5,5))
+	fig, axes = plt.subplots(nrows=B, ncols=2, figsize=(15,15))
 	fig.suptitle(f'Output descriptors of current batch', fontsize=12)
 	fig.tight_layout()
 	fig.subplots_adjust(top=0.9)
@@ -184,7 +188,8 @@ def visualize_desc(desc_gr, desc_sa, vis_ratio=10):
 		# axes[i,1].axis('off')
 		axes[i,1].get_yaxis().set_visible(False)
 
-	plt.show()
+	# plt.show()
+	plt.savefig(join(sys.path[0], 'desc_visualize_for_debug', f"{datetime.now().strftime('%b%d_%H-%M-%S')}.png"))
 
 def visualize_scores(scores, label, vis_ratio=1, mode='plot'):
 	logits = F.log_softmax(scores, dim=1)
