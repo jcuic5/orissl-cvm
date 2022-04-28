@@ -53,10 +53,10 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 from orissl_cvm import PACKAGE_ROOT_DIR
-from orissl_cvm.tools.pretrain_epoch import pretrain_epoch
-from orissl_cvm.tools.val_cls import val_cls
+from orissl_cvm.tools.pretrain_oricls_epoch import pretrain_epoch
+from orissl_cvm.tools.val_oricls import val_cls
 from orissl_cvm.tools import save_checkpoint, create_logger, log_config_to_file
-from orissl_cvm.utils import input_transform
+from orissl_cvm.augmentations import input_transform
 from orissl_cvm.datasets.cvact_dataset import CVACTDataset
 from orissl_cvm.models.safa import SAFAvgg16Cls
 from orissl_cvm.tools.visualize import visualize_dataloader
@@ -167,7 +167,6 @@ if __name__ == "__main__":
         optimizer.load_state_dict(checkpoint['optimizer'])
 
     # Loss
-    # TODO delete it later, because we're actually using our own loss function
     criterion = nn.CrossEntropyLoss().to(device)
     
     # Dataset and dataloader

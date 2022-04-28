@@ -35,56 +35,49 @@ import faiss
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from orissl_cvm.datasets.cvact_dataset import ImagePairsFromList
-from orissl_cvm.utils import input_transform
+from orissl_cvm.augmentations import input_transform
 from orissl_cvm.tools.visualize import visualize_desc
 
-
-def val(eval_set, model, desc_dim, device, cfg, writer, epoch_num=0, write_tboard=False, pbar_position=0):
-    if device.type == 'cuda':
-        cuda = True
-    else:
-        cuda = False
-    eval_set_queries = ImagePairsFromList(eval_set.root_dir, eval_set.qImages, transform=input_transform())
-    opt = {
-        'batch_size': cfg.train.batch_size, 
-        'shuffle': False, 
-        'num_workers': cfg.train.n_workers, 
-        'pin_memory': cuda, 
-        'collate_fn': ImagePairsFromList.collate_fn
-    }
-    test_data_loader_queries = DataLoader(dataset=eval_set_queries, **opt)
-
+def val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device, writer, epoch_num=0, write_tboard=False, pbar_position=0):
     model.eval()
+    # dynamically determine descriptor's dim
+    it = iter(val_dataloader_queries)
+    with torch.no_grad():
+        img_gr, img_sa, indices = next(it)
+        img_gr, img_sa = img_gr.to(device), img_sa.to(device)
+        desc_dim = model(img_gr, img_sa)[0].shape[-1]
+    del img_gr, img_sa, indices, it
+
+    # start extracting features
     with torch.no_grad():
         tqdm.write('====> Extracting Features')
-        qFeat_gr = np.empty((len(eval_set_queries), desc_dim), dtype=np.float32)
-        qFeat_sa = np.empty((len(eval_set_queries), desc_dim), dtype=np.float32)
+        qFeat_gr = np.empty((len(val_dataset_queries), desc_dim), dtype=np.float32)
+        qFeat_sa = np.empty((len(val_dataset_queries), desc_dim), dtype=np.float32)
 
-        for iteration, batch in enumerate(tqdm(test_data_loader_queries, 
-                position=pbar_position, leave=False, desc='Test Iter'.rjust(15)), 1):
+        local_progress = tqdm(val_dataloader_queries, position=pbar_position, leave=False, desc='Test Iter'.rjust(15))
+        for iteration, batch in enumerate(local_progress, 1):
             if batch is None: 
                 tqdm.write('====> Current batch is None')
                 continue
             img_gr, img_sa, indices = batch
             img_gr, img_sa = img_gr.to(device), img_sa.to(device)
-            encoding = model(img_gr, img_sa)
-            qFeat_gr[indices.detach().numpy(), :] = encoding[0].detach().cpu().numpy()
-            qFeat_sa[indices.detach().numpy(), :] = encoding[1].detach().cpu().numpy()
+            descQ_gr, descQ_sa = model(img_gr, img_sa)
+            qFeat_gr[indices.detach().numpy(), :] = descQ_gr.detach().cpu().numpy()
+            qFeat_sa[indices.detach().numpy(), :] = descQ_sa.detach().cpu().numpy()
 
-            del img_gr, img_sa, encoding
-
-    del test_data_loader_queries
+            del img_gr, img_sa, descQ_gr, descQ_sa
 
     # NOTE visualize 8 samples in val set for debug
     # visualize_desc(torch.from_numpy(qFeat_gr)[:8], torch.from_numpy(qFeat_sa)[:8])
 
+    # start evaluation
     tqdm.write('====> Calculating recall @ N')
     n_values = [1, 5, 10, 20, 50, 100]
     # NOTE for debug on a single 8-sample batch
     # n_values = [1, 2, 3, 4, 5, 6, 7, 8]
 
     # for each query get those within threshold distance
-    gt = eval_set.all_pos_indices
+    gt = val_dataset.all_pos_indices
 
     # any combination of mapillary cities will work as a val set
     faiss_index = faiss.IndexFlatL2(desc_dim)
@@ -101,7 +94,7 @@ def val(eval_set, model, desc_dim, device, cfg, writer, epoch_num=0, write_tboar
                 break
     # 简单来说，就是在以这个严格标准下评判（只要pred中的前这些个里面有一个真的是gt里的
     # 一个就可以）总共有多少比例的qidx
-    recall_at_n = correct_at_n / len(eval_set.qIdx)
+    recall_at_n = correct_at_n / len(val_dataset.qIdx)
 
     all_recalls = {}  # make dict for output
     for i, n in enumerate(n_values):

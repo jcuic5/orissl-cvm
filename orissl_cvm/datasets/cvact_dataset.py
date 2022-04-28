@@ -36,6 +36,36 @@ from sklearn.neighbors import NearestNeighbors
 import random
 
 
+class ImagesFromList(Dataset):
+    def __init__(self, root_dir, images, transform, category='ground'):
+        self.root_dir = root_dir
+        if category == 'ground':
+            self.path = join(self.root_dir, 'streetview')
+            self.key = 'img_gr'
+        elif category == 'satellite':
+            self.path = join(self.root_dir, 'polarmap')
+            self.key = 'img_sa'
+        else:
+            raise NotImplementedError
+
+        self.images = np.asarray(images)
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        try:
+            img = self.transform(Image.open(join(self.path, self.images[idx][self.key])))
+        except:
+            return None
+        return img, idx
+
+    @staticmethod
+    def collate_fn(batch):
+        return data.dataloader.default_collate(batch) if None not in batch else None
+
+
 class ImagePairsFromList(Dataset):
     def __init__(self, root_dir, images, transform):
         self.root_dir = root_dir
@@ -50,8 +80,8 @@ class ImagePairsFromList(Dataset):
 
     def __getitem__(self, idx):
         try:
-            img_gr = self.transform(Image.open(join(self.gr_path, self.images[idx]['gr_img'])))
-            img_sa = self.transform(Image.open(join(self.sa_path, self.images[idx]['sa_img'])))
+            img_gr = self.transform(Image.open(join(self.gr_path, self.images[idx]['img_gr'])))
+            img_sa = self.transform(Image.open(join(self.sa_path, self.images[idx]['img_sa'])))
         except:
             return None
         return img_gr, img_sa, idx
@@ -64,11 +94,10 @@ class ImagePairsFromList(Dataset):
 class CVACTDataset(Dataset):
     def __init__(self, root_dir, mode, transform, logger, posDistThr=5, 
                  negDistThr=5, positive_sampling=False, mini_scale=None, 
-                 task='cvm'):
+                 version='mini'):
 
         # initializing
         assert mode in ('train', 'val', 'test')
-        assert task in ('cvm', 'ssl')
         self.root_dir = root_dir
         self.gr_path = join(self.root_dir, 'streetview')
         self.sa_path = join(self.root_dir, 'polarmap')
@@ -83,14 +112,12 @@ class CVACTDataset(Dataset):
         self.negDistThr = negDistThr
         # flags
         self.mode = mode
-        self.task = task
         # other
         self.transform = transform
-        self.num_dirs = 4
         self.logger = logger
 
         # load data
-        data_info_path = join(sys.path[0], 'assets/CVACT_infos_1')
+        data_info_path = join(sys.path[0], f'assets/CVACT_infos_{version}')
         if self.mode in ['train', 'val']:
             keysQ, utmQ = self.read_info(data_info_path, self.mode)
             assert(len(keysQ) != 0 and len(utmQ) != 0)
@@ -182,8 +209,8 @@ class CVACTDataset(Dataset):
             for line in fh.readlines():
                 # remove linebreak which is the last character of the string
                 content = line[:-1].split(' ')
-                key_list.append({'gr_img': content[0].split('/')[-1],
-                                 'sa_img': content[1].split('/')[-1]})
+                key_list.append({'img_gr': content[0].split('/')[-1],
+                                 'img_sa': content[1].split('/')[-1]})
                 utm_list.append(np.array([content[2], content[3]]).astype(np.float64))
 
         return key_list, np.asarray(utm_list)
@@ -199,86 +226,27 @@ class CVACTDataset(Dataset):
         # print weight information
         pass
 
-    def random_slide_pano(self, img, label=None):
-        H, W = img.shape[-2], img.shape[-1]
-        if label == None:
-            label = random.randint(0, self.num_dirs)
-        slide_w = int(float(1 - label / self.num_dirs) * W)
-        # img[..., :5] = 0 # NOTE draw a dividing line for debug
-        img = torch.cat([img[..., slide_w:], img[..., :slide_w]], dim=-1)
-        # NOTE one-hot encoding, but not needed
-        # label = torch.zeros(36, dtype=torch.long).scatter_(dim=0, index=torch.tensor(label), value=1)
-        return img, label
-
     def __getitem__(self, qidx):
         key = self.qImages[qidx]
-
-        if self.task == 'cvm':
-            # load images
-            try:
-                query_gr = self.transform(Image.open(join(self.gr_path, key['gr_img'])))
-                query_sa = self.transform(Image.open(join(self.sa_path, key['sa_img'])))
-            except:
-                # NOTE errors might met: 
-                # FileNotFoundError, OSError: image file is truncated
-                # https://stackoverflow.com/a/23575424 could solve the truncated issue 
-                # but we choose directly not to use the sample
-                return None
-            return query_gr, query_sa, key, qidx
-
-        elif self.task == 'ssl':
-            query_gr, query_sa, label = [], [], []
-            # load images
-            try:
-                gr_img = Image.open(join(self.gr_path, key['gr_img']))
-                sa_img = Image.open(join(self.sa_path, key['sa_img']))
-            except:
-                return None
-            for j in range(self.num_dirs):
-                for i in range(self.num_dirs):
-                    q_gr, l_gr = self.random_slide_pano(self.transform(gr_img), label=i)
-                    query_gr.append(q_gr)
-                    q_sa, l_sa = self.random_slide_pano(self.transform(sa_img), label=j)
-                    query_sa.append(q_sa)
-                    label.append(l_gr - l_sa if l_gr - l_sa >= 0 else l_gr - l_sa + self.num_dirs)
-            key = [key] * self.num_dirs**2
-            qidx = [qidx] * self.num_dirs**2
-            return query_gr, query_sa, label, key, qidx
+        key_gr, key_sa = key['img_gr'], key['img_sa']
+        try:
+            input_data = self.transform(Image.open(join(self.gr_path, key_gr)), 
+                                        Image.open(join(self.sa_path, key_sa)))
+        except (FileNotFoundError, OSError):
+            input_data = None
+        return input_data, key_gr, key_sa, qidx
 
     def __len__(self):
         return self.length
 
     @staticmethod
-    def collate_fn_cvm(batch, qpn_matrix):
-        if None in batch:
-            return None
-        query_gr, query_sa, key, qidx = zip(*batch)
-
-        query_gr = data.dataloader.default_collate(query_gr)
-        query_sa = data.dataloader.default_collate(query_sa)
-        qidx, key = list(qidx), list(key)
-        batch_qpn_mat = qpn_matrix[qidx, :][:, qidx]
+    def collate_fn(batch):
+        input_data, key_gr, key_sa, qidx = zip(*batch)
+        if None in input_data: return None
+        input_data = [data.dataloader.default_collate(x) for x in zip(*input_data)]
         meta = {
-            'indices': qidx,
-            'keys': key,
-            'qpn_mat': batch_qpn_mat
+            'indices': list(qidx),
+            'keys_gr': list(key_gr),
+            'keys_sa': list(key_sa)
         }
-        return query_gr, query_sa, meta
-
-    @staticmethod
-    def collate_fn_ssl(batch):
-        if None in batch:
-            return None
-        query_gr, query_sa, label, key, qidx = zip(*batch)
-        stack = lambda x : data.dataloader.default_collate(
-                        [var for sample in x for var in sample])
-        query_gr = stack(query_gr)
-        query_sa = stack(query_sa)
-        label = stack(label)
-        qidx = [var for sample in list(qidx) for var in sample]
-        key = [var for sample in list(key) for var in sample]
-        meta = {
-            'indices': qidx,
-            'keys': key
-        }
-        return query_gr, query_sa, label, meta
+        return input_data, meta

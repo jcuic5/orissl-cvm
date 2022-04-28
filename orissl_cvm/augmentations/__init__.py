@@ -1,0 +1,124 @@
+import numpy as np
+import torch
+import random
+from torchvision.transforms import GaussianBlur
+from torchvision import transforms as T
+
+
+imagenet_mean_std = [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]]
+
+
+def input_transform(resize=(112, 616)):
+    if resize[0] > 0 and resize[1] > 0:
+        return T.Compose([
+            T.Resize(resize),
+            T.ToTensor(),
+            T.Normalize(mean=imagenet_mean_std[0], 
+                        std=imagenet_mean_std[1]),
+        ])
+    else:
+        return T.Compose([
+            T.ToTensor(),
+            T.Normalize(mean=imagenet_mean_std[0], 
+                        std=imagenet_mean_std[1]),
+        ])
+
+
+def random_slide_pano(img, num_dirs):
+    H, W = img.shape[-2], img.shape[-1]
+    label = random.randint(0, num_dirs)
+    slide_w = int(float(1 - label / num_dirs) * W)
+    # NOTE draw a dividing line for debug
+    # img[..., :5] = 0
+    img = np.concatenate([img[..., slide_w:], img[..., :slide_w]], axis=-1)
+    return img, label
+
+
+class InputPairTransform():
+    def __init__(self, image_size):
+        self.transform = T.Compose([
+            T.Resize(image_size),
+            T.ToTensor(),
+            T.Normalize(mean=imagenet_mean_std[0], std=imagenet_mean_std[1]),
+        ])
+    def __call__(self, img_gr, img_sa):
+        img_gr = self.transform(img_gr)
+        img_sa = self.transform(img_sa)
+        return img_gr, img_sa
+
+
+class OriLabelTransform():
+    def __init__(self, image_size, num_dirs=4):
+        self.num_dirs = num_dirs
+        self.transform = T.Compose([
+            T.Resize(image_size),
+            T.ToTensor(),
+            T.Normalize(mean=imagenet_mean_std[0], std=imagenet_mean_std[1]),
+            lambda x : random_slide_pano(x, num_dirs)
+        ])
+    def __call__(self, img_gr, img_sa):
+        img_gr, l_gr = self.transform(img_gr)
+        img_sa, l_sa = self.transform(img_sa)
+        label = l_gr - l_sa if l_gr - l_sa >= 0 else l_gr - l_sa + self.num_dirs
+        return img_gr, img_sa, label
+
+
+class OriLabelPairTransform():
+    def __init__(self, image_size, num_dirs=4):
+        self.num_dirs = num_dirs
+        self.transform = T.Compose([
+            T.Resize(image_size),
+            T.ToTensor(),
+            T.Normalize(mean=imagenet_mean_std[0], std=imagenet_mean_std[1]),
+            lambda x : random_slide_pano(x, num_dirs)
+        ])
+    def __call__(self, img_gr, img_sa):
+        img_gr1, l_gr1 = self.transform(img_gr)
+        img_gr2, l_gr2 = self.transform(img_gr)
+        img_sa1, l_sa1 = self.transform(img_sa)
+        img_sa2, l_sa2 = self.transform(img_sa)
+        label1 = l_gr1 - l_gr2 if l_gr1 - l_gr2 >= 0 else l_gr1 - l_gr2 + self.num_dirs
+        label2 = l_sa1 - l_sa2 if l_sa1 - l_sa2 >= 0 else l_sa1 - l_sa2 + self.num_dirs
+        return img_gr1, img_gr2, label1, img_sa1, img_sa2, label2
+
+
+class SimSiamTransform():
+    def __init__(self, image_size, mean_std=imagenet_mean_std):
+        image_size = (image_size, image_size) if isinstance(image_size, int) else image_size            
+        p_blur = 0.5
+        self.transform = T.Compose([
+            # T.RandomResizedCrop(image_size, scale=(0.2, 1.0)),
+            # T.RandomHorizontalFlip(),
+            T.Resize(image_size), # NOTE added
+            T.RandomApply([T.ColorJitter(0.4,0.4,0.4,0.1)], p=0.8),
+            T.RandomGrayscale(p=0.2),
+            T.RandomApply([T.GaussianBlur(kernel_size=[x//20*2+1 for x in image_size], sigma=(0.1, 2.0))], p=p_blur),
+            T.ToTensor(),
+            T.Normalize(*mean_std)
+        ])
+    def __call__(self, x):
+        x1 = self.transform(x)
+        x2 = self.transform(x)
+        return x1, x2
+
+
+class SimSiamPairTransform():
+    def __init__(self, image_size, mean_std=imagenet_mean_std):
+        image_size = (image_size, image_size) if isinstance(image_size, int) else image_size            
+        p_blur = 0.5
+        self.transform = T.Compose([
+            # T.RandomResizedCrop(image_size, scale=(0.2, 1.0)),
+            # T.RandomHorizontalFlip(),
+            T.Resize(image_size), # NOTE added
+            T.RandomApply([T.ColorJitter(0.4,0.4,0.4,0.1)], p=0.8),
+            T.RandomGrayscale(p=0.2),
+            T.RandomApply([T.GaussianBlur(kernel_size=[x//20*2+1 for x in image_size], sigma=(0.1, 2.0))], p=p_blur),
+            T.ToTensor(),
+            T.Normalize(*mean_std)
+        ])
+    def __call__(self, img_gr, img_sa):
+        img_gr1 = self.transform(img_gr)
+        img_gr2 = self.transform(img_gr)
+        img_sa1 = self.transform(img_sa)
+        img_sa2 = self.transform(img_sa)
+        return img_gr1, img_gr2, img_sa1, img_sa2

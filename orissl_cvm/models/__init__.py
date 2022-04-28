@@ -1,75 +1,8 @@
+from statistics import mode
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-
-class EmbeddingNet(nn.Module):
-    def __init__(self):
-        super(EmbeddingNet, self).__init__()
-        self.convnet = nn.Sequential(nn.Conv2d(1, 32, 5), nn.PReLU(),
-                                     nn.MaxPool2d(2, stride=2),
-                                     nn.Conv2d(32, 64, 5), nn.PReLU(),
-                                     nn.MaxPool2d(2, stride=2))
-
-        self.fc = nn.Sequential(nn.Linear(64 * 4 * 4, 256),
-                                nn.PReLU(),
-                                nn.Linear(256, 256),
-                                nn.PReLU(),
-                                nn.Linear(256, 2)
-                                )
-
-    def forward(self, x):
-        output = self.convnet(x)
-        output = output.view(output.size()[0], -1)
-        output = self.fc(output)
-        return output
-
-    def get_embedding(self, x):
-        return self.forward(x)
-
-
-class EmbeddingNetL2(EmbeddingNet):
-    def __init__(self):
-        super(EmbeddingNetL2, self).__init__()
-
-    def forward(self, x):
-        output = super(EmbeddingNetL2, self).forward(x)
-        output /= output.pow(2).sum(1, keepdim=True).sqrt()
-        return output
-
-    def get_embedding(self, x):
-        return self.forward(x)
-
-
-class ClassificationNet(nn.Module):
-    def __init__(self, embedding_net, n_classes):
-        super(ClassificationNet, self).__init__()
-        self.embedding_net = embedding_net
-        self.n_classes = n_classes
-        self.nonlinear = nn.PReLU()
-        self.fc1 = nn.Linear(2, n_classes)
-
-    def forward(self, x):
-        output = self.embedding_net(x)
-        output = self.nonlinear(output)
-        scores = F.log_softmax(self.fc1(output), dim=-1)
-        return scores
-
-    def get_embedding(self, x):
-        return self.nonlinear(self.embedding_net(x))
-
-
-class SiameseNet(nn.Module):
-    def __init__(self, embedding_net):
-        super(SiameseNet, self).__init__()
-        self.embedding_net = embedding_net
-
-    def forward(self, x1, x2):
-        output1 = self.embedding_net(x1)
-        output2 = self.embedding_net(x2)
-        return output1, output2
-
-    def get_embedding(self, x):
-        return self.embedding_net(x)
+from torchvision.models import resnet50, resnet18, vgg16
 
 
 class Flatten(nn.Module):
@@ -86,14 +19,75 @@ class L2Norm(nn.Module):
         return F.normalize(input_data, p=2, dim=self.dim)
 
 
-#! deprecated
-def get_pool(config): 
-    # config['global_params'] is passed as config
-    if config['pooling'].lower() == 'max':
-        global_pool = nn.AdaptiveMaxPool2d((1, 1))
-        return nn.Sequential(*[global_pool, Flatten(), L2Norm()])
-    elif config['pooling'].lower() == 'avg':
-        global_pool = nn.AdaptiveAvgPool2d((1, 1))
-        return nn.Sequential(*[global_pool, Flatten(), L2Norm()])
+def _initialize_weights(m):
+    if isinstance(m, nn.Conv2d):
+        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.BatchNorm2d):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.Linear):
+        nn.init.normal_(m.weight, 0, 0.01)
+        nn.init.constant_(m.bias, 0)
+
+
+def get_backbone(name):
+    backbone = eval(f"{name}()")
+    if name == 'resnet18' or name == 'resnet50':
+        layers = list(backbone.children())[:-2]
+        backbone = nn.Sequential(*layers)
+    elif name == 'vgg16':
+        # drop the last two layers: ReLU and MaxPool2d
+        layers = list(backbone.features.children())[:-2]
+        # NOTE optionally freeze part of the backbone
+        # only train conv5_1, conv5_2, and conv5_3 (leave rest same as Imagenet trained weights)
+        # for layer in layers[:-5]:
+        #     for p in layer.parameters():
+        #         p.requires_grad = False
+        backbone = nn.Sequential(*layers)
     else:
-        raise ValueError('Unknown pooling type: ' + config['pooling'].lower())
+        raise NotImplementedError
+
+    return backbone
+
+
+def get_pool(name, norm=True):
+    from .safa import SPEPool
+
+    if name == 'max':
+        return nn.Sequential(*[nn.AdaptiveMaxPool2d((1, 1)), Flatten(), L2Norm()]) if norm else \
+               nn.Sequential(*[nn.AdaptiveMaxPool2d((1, 1)), Flatten()])
+    elif name == 'avg':
+        return nn.Sequential(*[nn.AdaptiveAvgPool2d((1, 1)), Flatten(), L2Norm()]) if norm else \
+               nn.Sequential(*[nn.AdaptiveAvgPool2d((1, 1)), Flatten()])
+    elif name == 'safa':
+        return SPEPool(8, norm)
+    else:
+        raise NotImplementedError
+
+
+def get_model(model_cfg):
+    from .simsiam import SimSiam
+    from .byol import BYOL
+    from .simclr import SimCLR
+    from .safa import CrossViewMatchingModel
+
+    feat_dim = 4096 if model_cfg.pool == 'safa' else 512
+
+    if model_cfg.name == 'simsiam':
+        model = SimSiam(get_backbone(model_cfg.backbone), get_pool(model_cfg.pool, norm=False), feat_dim)
+        if model_cfg.proj_layers is not None:
+            model.projector.set_layers(model_cfg.proj_layers)
+    elif model_cfg.name == 'byol':
+        model = BYOL(get_backbone(model_cfg.backbone))
+    elif model_cfg.name == 'simclr':
+        model = SimCLR(get_backbone(model_cfg.backbone))
+    elif model_cfg.name == 'swav':
+        raise NotImplementedError
+    elif model_cfg.name == 'crossview':
+        model = CrossViewMatchingModel(model_cfg.backbone, model_cfg.pool)
+    else:
+        raise NotImplementedError
+
+    return model

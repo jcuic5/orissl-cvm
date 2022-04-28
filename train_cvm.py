@@ -53,21 +53,23 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 from orissl_cvm import PACKAGE_ROOT_DIR
-from orissl_cvm.tools.train_epoch import train_epoch
-from orissl_cvm.tools.val import val
+from orissl_cvm.models import get_backbone
+from orissl_cvm.tools.train_cvm_epoch import train_epoch
+from orissl_cvm.tools.val_cvm import val
 from orissl_cvm.tools import save_checkpoint, create_logger, log_config_to_file
-from orissl_cvm.utils import input_transform
-from orissl_cvm.datasets.cvact_dataset import CVACTDataset
-from orissl_cvm.models.safa import SAFAvgg16
+from orissl_cvm.augmentations import input_transform, InputPairTransform
+from orissl_cvm.datasets.cvact_dataset import CVACTDataset, ImagePairsFromList
+from orissl_cvm.models import get_model
 from orissl_cvm.tools.visualize import visualize_dataloader
+from orissl_cvm.loss import SoftTripletLoss
 
 from tqdm.auto import trange
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='training')
-    parser.add_argument('--config_path', type=str, default=join(PACKAGE_ROOT_DIR, os.pardir, 'configs/train.ini'),
-                        help='File name (with extension) to an ini file that stores most of the configuration data')
+    parser.add_argument('--config_path', type=str, default=join(PACKAGE_ROOT_DIR, os.pardir, 'configs/train_cvm.yaml'),
+                        help='File name (with extension) to the yaml file that stores the configuration')
 
     # Parse arguments
     opt = parser.parse_args()
@@ -78,7 +80,7 @@ if __name__ == "__main__":
     with open(cfg_file, 'r') as f:
         cfg = edict(yaml.load(f, Loader=yaml.Loader))
 
-    logdir = join(cfg.train.save_path, datetime.now().strftime('%b%d_%H-%M-%S') + '_' + cfg.train.identifier)
+    logdir = join(cfg.train.save_path, datetime.now().strftime('%b%d_%H-%M-%S') + '_' + cfg.identifier)
     makedirs(logdir)
     shutil.copyfile(cfg_file, join(logdir, cfg_file.split('/')[-1]))
     log_file = join(logdir, 'log_train.txt')
@@ -120,8 +122,7 @@ if __name__ == "__main__":
             logger.info("===> loading checkpoint '{}'".format(cfg.train.resume_path))
             checkpoint = torch.load(cfg.train.resume_path, map_location=lambda storage, loc: storage)
 
-            model = SAFAvgg16()
-
+            model = get_model(cfg.model)
             model.load_state_dict(checkpoint['state_dict'])
             cfg.train.start_epoch = checkpoint['epoch']
 
@@ -130,9 +131,9 @@ if __name__ == "__main__":
             raise FileNotFoundError("===> no checkpoint found at '{}'".format(cfg.train.resume_path))
     else: # if not, assume fresh training instance and will initially generate cluster centroids
         logger.info('===> Loading model')
-        model = SAFAvgg16()
+        model = get_model(cfg.model)
 
-    desc_dim = model.desc_dim
+    model = model.to(device)
     logger.info(model)
 
     # If DataParallel
@@ -147,59 +148,72 @@ if __name__ == "__main__":
     optimizer = None
     scheduler = None
 
-    if cfg.params.optim == 'ADAM':
+    if cfg.hyperparams.optim == 'adam':
         optimizer = optim.Adam(filter(lambda par: par.requires_grad,
-                                      model.parameters()), lr=cfg.params.lr)  # , betas=(0,0.9))
-    elif cfg.params.optim == 'SGD':
+                                      model.parameters()), lr=cfg.hyperparams.lr)  # , betas=(0,0.9))
+    elif cfg.hyperparams.optim == 'sgd':
         optimizer = optim.SGD(filter(lambda par: par.requires_grad,
-                                     model.parameters()), lr=cfg.params.lr,
-                              momentum=cfg.params.momentum,
-                              weight_decay=cfg.params.weight_decay)
+                                     model.parameters()), lr=cfg.hyperparams.lr,
+                              momentum=cfg.hyperparams.momentum,
+                              weight_decay=cfg.hyperparams.weight_decay)
 
         # TODO include scheduler later
-        # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config.train.lr_step,
-        #                                       gamma=config.train.lr_gamma)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=cfg.hyperparams.lr_step,
+                                              gamma=cfg.hyperparams.lr_gamma)
     else:
-        raise ValueError('Unknown optimizer: ' + cfg.params.optim)
-    
-    model = model.to(device)
+        raise ValueError('Unknown optimizer: ' + cfg.hyperparams.optim)
 
     if cfg.train.resume_path:
         optimizer.load_state_dict(checkpoint['optimizer'])
 
     # Loss
     # TODO delete it later, because we're actually using our own loss function
-    criterion = nn.TripletMarginLoss(margin=cfg.params.margin ** 0.5, p=2, reduction='sum').to(device)
+    # criterion = nn.TripletMarginLoss(margin=cfg.hyperparams.margin ** 0.5, p=2, reduction='sum').to(device)
+    criterion = SoftTripletLoss()
     
     # Dataset and dataloader
     logger.info('===> Loading dataset(s)')
-    train_dataset = CVACTDataset(cfg.train.dataset_root_dir,
+    train_dataset = CVACTDataset(cfg.dataset.dataset_root_dir,
                                  mode='train', 
-                                 transform=input_transform(),
-                                 logger=logger)
+                                 transform=InputPairTransform((cfg.model.img_size_h, cfg.model.img_size_w)),
+                                 logger=logger,
+                                 version=cfg.dataset.dataset_version)
     logger.info(f'Full num of image pairs in training set: {train_dataset.qImages.shape[0]}')
     logger.info(f'Num of queries in training set: {len(train_dataset)}')
 
-    training_data_loader = DataLoader(dataset=train_dataset, 
-        num_workers=cfg.train.n_workers,
+    train_dataloader = DataLoader(dataset=train_dataset, 
+        num_workers=cfg.dataset.n_workers,
         batch_size=cfg.train.batch_size, 
         shuffle=True,
-        collate_fn = lambda b : train_dataset.collate_fn_cvm(b, train_dataset.qpn_matrix), 
+        collate_fn = train_dataset.collate_fn, 
         pin_memory=cuda
     )
 
     # NOTE visualize batches for debug
     # visualize_dataloader(training_data_loader)
 
-    validation_dataset = CVACTDataset(cfg.train.dataset_root_dir, 
-                                      mode='val', 
-                                      transform=input_transform(),
-                                      logger=logger)
-    # NOTE for debug, use train set it self to validate
-    # validation_dataset = train_dataset
-
-    logger.info(f'Full num of image pairs in validation set: {validation_dataset.qImages.shape[0]}')
-    logger.info(f'Num of queries in validation set: {len(validation_dataset)}')
+    if cfg.train.train_as_val is True:
+        # NOTE for debug, use train set it self to validate
+        val_dataset = train_dataset
+    else:
+        val_dataset = CVACTDataset(cfg.dataset.dataset_root_dir, 
+                                        mode='val', 
+                                        transform=None, # NOTE because we're not really using this dataset
+                                        logger=logger,
+                                        version=cfg.dataset.dataset_version)
+    logger.info(f'Full num of image pairs in validation set: {val_dataset.qImages.shape[0]}')
+    logger.info(f'Num of queries in validation set: {len(val_dataset)}')
+    val_dataset_queries = ImagePairsFromList(val_dataset.root_dir, 
+                                          val_dataset.qImages, 
+                                          transform=input_transform())
+    opt = {
+        'batch_size': cfg.train.batch_size, 
+        'shuffle': False, 
+        'num_workers': cfg.dataset.n_workers, 
+        'pin_memory': cuda, 
+        'collate_fn': ImagePairsFromList.collate_fn
+    }
+    val_dataloader_queries = DataLoader(dataset=val_dataset_queries, **opt)
 
     # SummaryWriter, and create logdir
     writer = SummaryWriter(log_dir=logdir)
@@ -220,18 +234,12 @@ if __name__ == "__main__":
     # model.load_state_dict(torch.load("work_dirs/Apr04_21-49-08_cvact_resnet50/checkpoints/a_temp_for_debug.pth"))
     
     for epoch in trange(cfg.train.start_epoch + 1, cfg.train.n_epochs + 1, desc='Epoch number'.rjust(15), position=0):
-
-        train_epoch(train_dataset, training_data_loader, model, optimizer, criterion, device, epoch, cfg, writer)
+        train_epoch(train_dataset, train_dataloader, model, optimizer, scheduler, criterion, device, epoch, cfg, writer)
 
         # TODO delete it later
         # torch.save(model.state_dict(), join(opt.save_file_path, "a_temp_for_debug.pth"))
-
-        if scheduler is not None:
-            # TODO a little out-of-date. Use scheduler.step() after optimizer.step() later
-            scheduler.step(epoch)
-
         if (epoch % cfg.train.eval_every) == 0:
-            recalls = val(validation_dataset, model, desc_dim, device, cfg, writer, epoch,
+            recalls = val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device, writer, epoch,
                           write_tboard=True, pbar_position=1)
             is_best = recalls[5] > best_score
             if is_best:
@@ -254,7 +262,7 @@ if __name__ == "__main__":
                 logger.info('Performance did not improve for', cfg.train.patience, 'epochs. Stopping.')
                 break
 
-    logger.info("=> Best Recall@5: {:.4f}".format(best_score), flush=True)
+    logger.info("=> Best Recall@5: {:.4f}".format(best_score))
     writer.close()
 
     torch.cuda.empty_cache()  # garbage clean GPU memory, a bug can occur when Pytorch doesn't automatically clear the

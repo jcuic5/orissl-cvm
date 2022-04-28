@@ -41,28 +41,28 @@ def visualize_triplet(batch, sample_idx):
 	
 	axes[0,0].imshow(np.transpose(denormalize(query[0][sample_idx]),(1,2,0)))
 	axes[0,0].set_title(
-		f"Query ==> ground image\nidx: {indices[start]}, file name: {keys[sample_idx]['query']['gr_img']}")
+		f"Query ==> ground image\nidx: {indices[start]}, file name: {keys[sample_idx]['query']['img_gr']}")
 
 	axes[0,1].imshow(np.transpose(denormalize(query[1][sample_idx]),(1,2,0)))
 	axes[0,1].set_title(
-		f"Query ==> satellite image\nidx: {indices[start]}, file name: {keys[sample_idx]['query']['sa_img']}")
+		f"Query ==> satellite image\nidx: {indices[start]}, file name: {keys[sample_idx]['query']['img_sa']}")
 
 	# axes[1,0].imshow(np.transpose(denormalize(positive[0][sample_idx]),(1,2,0)))
 	# axes[1,0].set_title(
-	# 	f"Positive ==> ground image\n{keys[sample_idx]['positive']['gr_img']}")
+	# 	f"Positive ==> ground image\n{keys[sample_idx]['positive']['img_gr']}")
 	
 	# axes[1,1].imshow(np.transpose(denormalize(positive[1][sample_idx]),(1,2,0)))
 	# axes[1,1].set_title(
-	# 	f"Positive ==> satellite image\n{keys[sample_idx]['positive']['sa_img']}")
+	# 	f"Positive ==> satellite image\n{keys[sample_idx]['positive']['img_sa']}")
 
 	for i in range(num_ns):
 		axes[1+i,0].imshow(np.transpose(denormalize(negatives[0][neg_start+i]),(1,2,0)))
 		axes[1+i,0].set_title(
-			f"Negative {i} ==> ground image\nidx: {indices[start+i+1]}, file name: {keys[sample_idx]['negatives'][i]['gr_img']}")
+			f"Negative {i} ==> ground image\nidx: {indices[start+i+1]}, file name: {keys[sample_idx]['negatives'][i]['img_gr']}")
 
 		axes[1+i,1].imshow(np.transpose(denormalize(negatives[1][neg_start+i]),(1,2,0)))
 		axes[1+i,1].set_title(
-			f"Negative {i} ==> satellite image\nidx: {indices[start+i+1]}, file name: {keys[sample_idx]['negatives'][i]['sa_img']}")
+			f"Negative {i} ==> satellite image\nidx: {indices[start+i+1]}, file name: {keys[sample_idx]['negatives'][i]['img_sa']}")
 
 	plt.show()
 
@@ -81,11 +81,11 @@ def visualize_plain_batch(batch):
 	for i in range(B):
 		axes[i,0].imshow(np.transpose(denormalize(query[0][i]),(1,2,0)))
 		axes[i,0].set_title(
-			f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys[i]['gr_img']}", fontsize=8)
+			f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys[i]['img_gr']}", fontsize=8)
 
 		axes[i,1].imshow(np.transpose(denormalize(query[1][i]),(1,2,0)))
 		axes[i,1].set_title(
-			f"Sample {i} ==> satellite image\nidx: {indices[i]}, file name: {keys[i]['sa_img']}", fontsize=8)
+			f"Sample {i} ==> satellite image\nidx: {indices[i]}, file name: {keys[i]['img_sa']}", fontsize=8)
 
 	plt.show()
 
@@ -104,11 +104,11 @@ def visualize_plain_batch_pretrain(batch):
 	for i in range(Bv):
 		axes[i,0].imshow(np.transpose(denormalize(query_gr[i]),(1,2,0)))
 		axes[i,0].set_title(
-			f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys[i]['gr_img']}, label: {label[i]}", fontsize=8)
+			f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys[i]['img_gr']}, label: {label[i]}", fontsize=8)
 
 		axes[i,1].imshow(np.transpose(denormalize(query_sa[i]),(1,2,0)))
 		axes[i,1].set_title(
-			f"Sample {i} ==> satellite image\nidx: {indices[i]}, file name: {keys[i]['sa_img']}", fontsize=8)
+			f"Sample {i} ==> satellite image\nidx: {indices[i]}, file name: {keys[i]['img_sa']}", fontsize=8)
 
 	plt.show()
 
@@ -222,3 +222,26 @@ def visualize_scores(scores, label, vis_ratio=1, mode='plot'):
 			axes[i].get_yaxis().set_visible(False)
 
 	plt.show()
+
+
+def visualize_cl(batch):
+    (image1, image2), indices = batch
+    # image1_cdn, image2_cdn = image1.numpy(), image2.numpy()
+
+    B = image1.shape[0]
+    B_vis = min(B, 6)
+    
+    fig, axes = plt.subplots(nrows=B_vis, ncols=2, figsize=(10,10*B_vis/2))
+    fig.suptitle(f'Navigate dataloader of CVACT: current batch', fontsize=12)
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.9)
+    
+    for i in range(B_vis):
+        axes[i,0].imshow(np.transpose(denormalize(image1[i]),(1,2,0)))
+        axes[i,0].set_title(
+			f"Sample {i} ==> ground image 1\nidx: {indices[i]}", fontsize=8)
+        axes[i,1].imshow(np.transpose(denormalize(image2[i]),(1,2,0)))
+        axes[i,1].set_title(
+			f"Sample {i} ==> ground image 2\nidx: {indices[i]}", fontsize=8)
+            
+    plt.show()
