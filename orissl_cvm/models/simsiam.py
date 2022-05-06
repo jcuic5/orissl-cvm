@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F 
 from torchvision.models import resnet50
+from .__init__ import get_backbone, get_pool, get_encoder
 
 
 def D(p, z, version='simplified'): # negative cosine similarity
@@ -15,7 +16,6 @@ def D(p, z, version='simplified'): # negative cosine similarity
         return - F.cosine_similarity(p, z.detach(), dim=-1).mean()
     else:
         raise Exception
-
 
 
 class projection_MLP(nn.Module):
@@ -88,67 +88,19 @@ class prediction_MLP(nn.Module):
 
 
 class SimSiam(nn.Module):
-    def __init__(self, backbone, pool, feat_dim):
+    def __init__(self, backbone, pool, proj_layers, feat_dim):
         super().__init__()
-        
-        self.backbone = backbone
-        self.pool = pool
+        self.backbone = get_backbone(backbone)
+        self.pool = get_pool(pool, norm=False)
         self.projector = projection_MLP(feat_dim)
-
-        self.encoder = nn.Sequential( # f encoder
-            self.backbone,
-            self.pool,
-            self.projector
-        )
+        self.projector.set_layers(proj_layers)
         self.predictor = prediction_MLP()
     
-    def forward(self, x1, x2):
+        self.f = lambda x : self.projector(self.pool(self.backbone(x)))
+        self.h = lambda x : self.predictor(x)
 
-        f, h = self.encoder, self.predictor
-        z1, z2 = f(x1), f(x2)
-        p1, p2 = h(z1), h(z2)
+    def forward(self, x1, x2):
+        z1, z2 = self.f(x1), self.f(x2)
+        p1, p2 = self.h(z1), self.h(z2)
         L = D(p1, z2) / 2 + D(p2, z1) / 2
         return {'loss': L}
-
-
-
-
-
-
-if __name__ == "__main__":
-    model = SimSiam()
-    x1 = torch.randn((2, 3, 224, 224))
-    x2 = torch.randn_like(x1)
-
-    model.forward(x1, x2).backward()
-    print("forward backwork check")
-
-    z1 = torch.randn((200, 2560))
-    z2 = torch.randn_like(z1)
-    import time
-    tic = time.time()
-    print(D(z1, z2, version='original'))
-    toc = time.time()
-    print(toc - tic)
-    tic = time.time()
-    print(D(z1, z2, version='simplified'))
-    toc = time.time()
-    print(toc - tic)
-
-# Output:
-# tensor(-0.0010)
-# 0.005159854888916016
-# tensor(-0.0010)
-# 0.0014872550964355469
-
-
-
-
-
-
-
-
-
-
-
-

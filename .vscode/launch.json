@@ -14,8 +14,9 @@
             // train.py
             "args": [
                 // Don't forget 
-                "--config_path", "configs/train_cvm.yaml",
+                // "--config_path", "configs/train_cvm.yaml",
                 // "--config_path", "configs/pretrain_cl.yaml",
+                // "--config_path", "configs/pretrain_oripred.yaml",
             ]
         }
     ]

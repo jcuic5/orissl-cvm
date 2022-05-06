@@ -1,5 +1,3 @@
-identifier: 'crossview_vgg16_max_cvact'
-
 dataset:
   name: cvact
   dataset_root_dir: 'data/CVACT_full'
@@ -7,29 +5,39 @@ dataset:
   n_workers: 4
 
 model:
-  name: crossview
+  name: cvm
   backbone: vgg16
   pool: max
-  img_size_w: 616
+  shared: True
+  img_size_w: 512
   img_size_h: 112
 
 train:
-  seed: 123
-  batch_size: 16
+  seed: 42
+  batch_size: 8
   n_epochs: 80
   start_epoch: 0
-  eval_every: 5
+  eval_every: 1
   patience: 0
   save_every_epoch: False
   threads: '6'
-  gpu_ids: '2'
+  gpu_ids: '1'
   no_cuda: False
   n_gpu: 1
   save_path: 'work_dirs'
   # save_path: 'work_dirs_for_debug'
   resume_path: ''
+  # resume_path: 'work_dirs_for_debug/May01_19-05-51_crossview_vit_cvact_1k/checkpoints/checkpoint.pth.tar'
   # resume_path: 'work_dirs/Apr27_00-59-08_crossview_vgg16_safa_cvact/checkpoints/checkpoint.pth.tar'
+  # load_path: ''
+  # load_path: 'work_dirs/May01-2233_simsiam_vgg16_max_ground_cvact_mini/checkpoints/checkpoint.pth.tar,work_dirs/May01-2233_simsiam_vgg16_max_satellite_cvact_mini/checkpoints/checkpoint.pth.tar'
+  load_path: 'work_dirs/May04-0129_simsiam_vgg16_max_shared_cvact_mini/checkpoints/model_best.pth.tar'
+  # load_path: 'work_dirs/Apr30_02-54-03_crossview_vgg16_max_cvact_full/checkpoints/checkpoint.pth.tar'
+  load_sep_branch: False
+  load_only_backbone_pool: True
   train_as_val: False
+  only_val: False
+  grad_cam: False
 
 hyperparams:
   optim: 'adam'

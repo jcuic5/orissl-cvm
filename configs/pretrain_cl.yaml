@@ -1,9 +1,7 @@
-identifier: 'simsiam_ground_vgg16_cvact'
-
 dataset: 
   name: cvact
   dataset_root_dir: 'data/CVACT_full'
-  dataset_version: '5k'
+  dataset_version: 'mini'
   n_workers: 4
 
 model: 
@@ -11,38 +9,39 @@ model:
   backbone: vgg16
   pool: max
   proj_layers: 2
-  category: 'ground'
-  img_size_w: 616
+  shared: False
+  category: 'satellite'
+  img_size_w: 512
   img_size_h: 112
 
 train:
-  seed: null # None type for yaml file
+  seed: 42 # None type for yaml file
   # two things might lead to stochastic behavior other than seed:
   # worker_init_fn from dataloader and torch.nn.functional.interpolate 
   # (keep this in mind if you want to achieve 100% deterministic)
-  batch_size: 32
-  n_epochs: 30 # this parameter influence the lr decay
+  batch_size: 64
+  n_epochs: 80 # this parameter influence the lr decay
   start_epoch: 0
   eval_every: 1
-  patience: 0
+  patience: 10
   save_every_epoch: False
   threads: '6'
   gpu_ids: '2'
   no_cuda: False
   n_gpu: 1
-  # save_path: 'work_dirs'
-  save_path: 'work_dirs_for_debug'
-  # resume_path: ''
-  resume_path: 'work_dirs_for_debug/Apr28_00-11-30_simsiam_ground_vgg16_cvact/checkpoints/checkpoint.pth.tar'
+  save_path: 'work_dirs'
+  # save_path: 'work_dirs_for_debug'
+  resume_path: ''
+  # resume_path: 'work_dirs_for_debug/Apr28_00-11-30_simsiam_ground_vgg16_cvact/checkpoints/checkpoint.pth.tar'
+  load_path: ''
+  load_sep_branch: False
   train_as_val: False
-
-eval: False # linear evaluation, False will turn off automatic evaluation after training
 
 hyperparams:
   optim: 'sgd'
   weight_decay: 0.0005
   momentum: 0.9
-  warmup_epochs: 10
+  warmup_epochs: 1
   warmup_lr: 0
   base_lr: 0.03
   final_lr: 0

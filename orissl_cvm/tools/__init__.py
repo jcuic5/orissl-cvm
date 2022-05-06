@@ -25,6 +25,8 @@ Additional functions used during training.
 '''
 
 
+from email.policy import strict
+from matplotlib.pyplot import axis
 import numpy as np
 from scipy.sparse.linalg import eigs
 import torch
@@ -33,6 +35,8 @@ from os.path import join
 from PIL import Image
 import logging
 from easydict import EasyDict
+from os.path import join, isfile
+from orissl_cvm.models import get_model
 
 
 def pca(x: np.ndarray, num_pcs=None, subtract_mean=True):
@@ -139,6 +143,7 @@ def create_logger(log_file=None, rank=0, log_level=logging.INFO):
         logger.addHandler(file_handler)
     return logger
 
+
 def log_config_to_file(cfg, pre='cfg', logger=None):
     # NOTE code from OpenPCDet
     for key, val in cfg.items():
@@ -147,3 +152,96 @@ def log_config_to_file(cfg, pre='cfg', logger=None):
             log_config_to_file(cfg[key], pre=pre + '.' + key, logger=logger)
             continue
         logger.info('%s.%s: %s' % (pre, key, val))
+
+
+def get_model_with_ckpt(cfg, logger):
+    model, checkpoint = None, None
+
+    if cfg.train.resume_path and cfg.train.load_path:
+        raise RuntimeError("===> Resume path and load path are both indicated!")
+
+    elif cfg.train.load_path:
+        if cfg.train.load_sep_branch:
+            load_path_gr, load_path_sa = cfg.train.load_path.split(',')
+            if isfile(load_path_gr) and isfile(load_path_sa):
+                logger.info("===> loading branch weights separately '{}'".format(cfg.train.load_path))
+                encoder_gr = torch.load(load_path_gr, map_location=lambda storage, loc: storage)
+                encoder_sa = torch.load(load_path_sa, map_location=lambda storage, loc: storage)
+                model = get_model(cfg.model)
+                # NOTE For debug, check if params are loaded
+                # p1 = next(iter(model.nn_model_gr.backbone.parameters()))
+                # p2 = encoder_gr['state_dict']['backbone.0.weight']
+                model.nn_model_gr.load_state_dict({k : v for k, v in encoder_gr['state_dict'].items() if k.startswith('backbone.') or k.startswith('pool.')}, strict=True)
+                model.nn_model_sa.load_state_dict({k : v for k, v in encoder_sa['state_dict'].items() if k.startswith('backbone.') or k.startswith('pool.')}, strict=True)
+                logger.info("===> loaded branch weights separately '{}'".format(cfg.train.load_path))
+            else:
+                raise FileNotFoundError("===> no checkpoint found at '{}'".format(cfg.train.load_path))
+        else:
+            if isfile(cfg.train.load_path):                    
+                logger.info("===> loading model weights '{}'".format(cfg.train.load_path))
+                checkpoint = torch.load(cfg.train.load_path, map_location=lambda storage, loc: storage)
+                model = get_model(cfg.model)
+                if cfg.train.load_only_backbone_pool:
+                    model.load_state_dict({k : v for k, v in checkpoint['state_dict'].items() if k.startswith('backbone.') or k.startswith('pool.')}, strict=True)
+                else:
+                    model.load_state_dict(checkpoint['state_dict'], strict=True)
+                logger.info("===> loaded model weights '{}'".format(cfg.train.load_path))
+            else:
+                raise FileNotFoundError("===> no checkpoint found at '{}'".format(cfg.train.load_path))
+
+    elif cfg.train.resume_path: # if already started training earlier and continuing
+        if isfile(cfg.train.resume_path):
+            logger.info("===> loading checkpoint '{}'".format(cfg.train.resume_path))
+            checkpoint = torch.load(cfg.train.resume_path, map_location=lambda storage, loc: storage)
+            model = get_model(cfg.model)
+            model.load_state_dict(checkpoint['state_dict'], strict=True)
+            cfg.train.start_epoch = checkpoint['epoch']
+            logger.info("===> loaded checkpoint '{}'".format(cfg.train.resume_path))
+        else:
+            raise FileNotFoundError("===> no checkpoint found at '{}'".format(cfg.train.resume_path))
+
+    else: # if not, assume fresh training instance and will initially generate cluster centroids
+        model = get_model(cfg.model)
+
+    return model, checkpoint
+
+
+def backward_hook(module, grad_in, grad_out, grad_list):
+    grad_list.append(grad_out[0].detach())
+
+
+def forward_hook(module, input, output, fmp_list):
+    fmp_list.append(output)
+
+
+def gen_cam(fmp, grad):
+    """ 依据梯度和特征图，生成cam
+    :param feature_map: np.array， in [C, H, W]
+    :param grads: np.array， in [C, H, W]
+    :return: np.array, [H, W]
+    """
+    B, C, H, W = fmp.shape
+    cam = np.zeros((B, H, W), dtype=np.float32)  # (B, H, W)
+    weights = np.mean(grad, axis=(2, 3)) # (B, C)
+    # weights[...] = 1
+    for b in range(B):
+        for c in range(C):
+            cam[b] += weights[b, c] * fmp[b, c, :, :]
+    # cam = np.maximum(cam, 0) # relu
+    # cam -= np.min(cam, axis=0)
+    # cam /= np.max(cam, axis=0)
+    return cam
+
+
+def show_cam_on_image(img, mask, out_dir):
+    heatmap = cv2.applyColorMap(np.uint8(255*mask), cv2.COLORMAP_JET)
+    heatmap = np.float32(heatmap) / 255
+    cam = heatmap + np.float32(img)
+    cam = cam / np.max(cam)
+
+    path_cam_img = os.path.join(out_dir, "cam.jpg")
+    path_raw_img = os.path.join(out_dir, "raw.jpg")
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    cv2.imwrite(path_cam_img, np.uint8(255 * cam))
+    cv2.imwrite(path_raw_img, np.uint8(255 * img))

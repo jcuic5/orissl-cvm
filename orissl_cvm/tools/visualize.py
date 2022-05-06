@@ -2,6 +2,7 @@ from configparser import Interpolation
 import imp
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.feature_extraction import image
 import torch
 import torch.nn.functional as F
 from datetime import datetime
@@ -10,13 +11,59 @@ from os.path import join
 import sys
 
 def denormalize(im):
-	image = im.numpy()
-	im = (image - np.min(image)) / (np.max(image) - np.min(image))
+	im = (im - np.min(im)) / (np.max(im) - np.min(im))
 	im = np.ascontiguousarray(im * 255, dtype=np.uint8)
 	return im
 
-def visualize_triplet(batch, sample_idx):
 
+def visualize_assets(*assets, mode='image', max_nrows=6, dcn=True, caption='Batch images', **meta):
+	B = assets[0].shape[0]
+	if mode == 'descriptor': 
+		C = assets[0].shape[1]
+		vis_ratio = 10
+		assets = [F.adaptive_avg_pool1d(x.unsqueeze(1), int(C/vis_ratio)).squeeze(1) for x in assets]
+	if mode == 'score':
+		C = assets.shape[1]
+		assets = F.log_softmax(assets, dim=1)
+		assets = F.adaptive_avg_pool1d(assets.unsqueeze(1), int(C/vis_ratio)).squeeze(1)
+	nrows = min(B, max_nrows)
+	ncols = len(assets)
+	assets = [x.detach().cpu().numpy() for x in assets] if dcn else assets
+
+	fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(10,10 * nrows / 2))
+	fig.suptitle(caption, fontsize=12)
+	fig.tight_layout()
+	fig.subplots_adjust(top=0.9)
+
+	if mode == 'descriptor':
+		random = axes[0,0].imshow(np.random.random((1, int(C/vis_ratio))), cmap='viridis', interpolation='none')
+		fig.colorbar(random, ax=axes[0:,0:], location='right', shrink=0.2)
+
+	for i in range(nrows):
+		for j in range(ncols):
+			if mode == 'image':
+				im = assets[j][i]
+				if len(im.shape) == 3:
+					axes[i,j].imshow(np.transpose(denormalize(im), (1,2,0)))
+				elif len(im.shape) == 2:
+					axes[i,j].imshow(denormalize(im))
+			elif mode == 'descriptor':
+				axes[i,j].imshow(assets[j][i:i+1], cmap='viridis', interpolation='none')
+				axes[i,j].set_aspect(5)
+				axes[i,j].set_title(f"Sample {i} ==> ground descriptor", fontsize=8)
+				# axes[i,j].axis('off')
+				axes[i,j].get_yaxis().set_visible(False)
+			elif mode == 'score':
+				axes[i,j].plot(range(assets[i].shape[0]), assets[i], c='b')
+			info = f"Sample {i} \n"
+			for k, v in meta.items(): 
+				info += f"{k}: {v[i]} "
+			axes[i,j].set_title(info, fontsize=8)
+	plt.show()
+	# plt.savefig(join(sys.path[0], 'desc_visualize_for_debug', f"{datetime.now().strftime('%b%d_%H-%M-%S')}.png"))
+
+
+def visualize_triplet(batch, sample_idx):
 	query, negatives, meta = batch
 	negCounts, indices, keys = meta['negCounts'], meta['indices'], meta['keys']
 
@@ -66,51 +113,6 @@ def visualize_triplet(batch, sample_idx):
 
 	plt.show()
 
-def visualize_plain_batch(batch):
-
-	query, meta = batch
-	indices, keys, qpn_mat = meta['indices'], meta['keys'], meta['qpn_mat']
-	B = query[0].shape[0]
-
-	fig, axes = plt.subplots(nrows=B, ncols=2, figsize=(10,10*B/2))
-	fig.suptitle(f'Navigate dataloader of CVACT: current batch', fontsize=12)
-	fig.tight_layout()
-	fig.subplots_adjust(top=0.9)
-	print(qpn_mat)
-
-	for i in range(B):
-		axes[i,0].imshow(np.transpose(denormalize(query[0][i]),(1,2,0)))
-		axes[i,0].set_title(
-			f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys[i]['img_gr']}", fontsize=8)
-
-		axes[i,1].imshow(np.transpose(denormalize(query[1][i]),(1,2,0)))
-		axes[i,1].set_title(
-			f"Sample {i} ==> satellite image\nidx: {indices[i]}, file name: {keys[i]['img_sa']}", fontsize=8)
-
-	plt.show()
-
-def visualize_plain_batch_pretrain(batch):
-
-	query_gr, query_sa, label, meta = batch
-	indices, keys = meta['indices'], meta['keys']
-	B = query_gr.shape[0]
-	Bv = min(B, 6)
-
-	fig, axes = plt.subplots(nrows=Bv, ncols=2, figsize=(10,10 * Bv / 2))
-	fig.suptitle(f'Navigate dataloader of CVACT: current batch', fontsize=12)
-	fig.tight_layout()
-	fig.subplots_adjust(top=0.9)
-
-	for i in range(Bv):
-		axes[i,0].imshow(np.transpose(denormalize(query_gr[i]),(1,2,0)))
-		axes[i,0].set_title(
-			f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys[i]['img_gr']}, label: {label[i]}", fontsize=8)
-
-		axes[i,1].imshow(np.transpose(denormalize(query_sa[i]),(1,2,0)))
-		axes[i,1].set_title(
-			f"Sample {i} ==> satellite image\nidx: {indices[i]}, file name: {keys[i]['img_sa']}", fontsize=8)
-
-	plt.show()
 
 def visualize_dataloader(training_loader):
 	bs = training_loader.batch_size
@@ -118,13 +120,11 @@ def visualize_dataloader(training_loader):
 	while True:
 		try:
 			batch = next(it)
-			# for i in range(bs):
-			# 	visualize_triplet(batch, i)
-			# visualize_plain_batch(batch)
-			visualize_plain_batch_pretrain(batch)
+			# visualize
 		except StopIteration:
 			print("Data loader ran out.")
 			break
+
 
 def visualize_dataloader_interact(training_loader):
 	'''Note: To be launched in Jupyter'''
@@ -158,90 +158,3 @@ def visualize_dataloader_interact(training_loader):
 	button.on_click(on_button_clicked)
 	# displaying button and its output together
 	widgets.VBox([button,out])
-
-def visualize_desc(desc_gr, desc_sa, vis_ratio=10):
-	B = desc_gr.shape[0]
-	C = desc_gr.shape[1]
-	desc_gr = F.adaptive_avg_pool1d(desc_gr.unsqueeze(1), int(C/vis_ratio)).squeeze(1)
-	desc_sa = F.adaptive_avg_pool1d(desc_sa.unsqueeze(1), int(C/vis_ratio)).squeeze(1)
-
-	desc_gr_cdn, desc_sa_cdn = desc_gr.detach().cpu().numpy(), desc_sa.detach().cpu().numpy()
-
-	fig, axes = plt.subplots(nrows=B, ncols=2, figsize=(15,15))
-	fig.suptitle(f'Output descriptors of current batch', fontsize=12)
-	fig.tight_layout()
-	fig.subplots_adjust(top=0.9)
-
-	random = axes[0,0].imshow(np.random.random((1, int(C/vis_ratio))), cmap='viridis', interpolation='none')
-	fig.colorbar(random, ax=axes[0:,0:], location='right', shrink=0.2)
-
-	for i in range(B):
-		im0 = axes[i,0].imshow(desc_gr_cdn[i:i+1], cmap='viridis', interpolation='none')
-		axes[i,0].set_aspect(25)
-		axes[i,0].set_title(f"Sample {i} ==> ground descriptor", fontsize=8)
-		# axes[i,0].axis('off')
-		axes[i,0].get_yaxis().set_visible(False)
-
-		im1 = axes[i,1].imshow(desc_sa_cdn[i:i+1], cmap='viridis', interpolation='none')
-		axes[i,1].set_aspect(25)
-		axes[i,1].set_title(f"Sample {i} ==> satellite descriptor", fontsize=8)
-		# axes[i,1].axis('off')
-		axes[i,1].get_yaxis().set_visible(False)
-
-	# plt.show()
-	plt.savefig(join(sys.path[0], 'desc_visualize_for_debug', f"{datetime.now().strftime('%b%d_%H-%M-%S')}.png"))
-
-def visualize_scores(scores, label, vis_ratio=1, mode='plot'):
-	logits = F.log_softmax(scores, dim=1)
-	B = scores.shape[0]
-	C = scores.shape[1]
-	Bv = min(B, 6)
-	logits = F.adaptive_avg_pool1d(logits.unsqueeze(1), int(C/vis_ratio)).squeeze(1)
-
-	logits_cdn = logits.detach().cpu().numpy()
-
-	fig, axes = plt.subplots(nrows=Bv, ncols=1, figsize=(5,5))
-	fig.suptitle(f'Output scores (after log_softmax) of current batch', fontsize=12)
-	fig.tight_layout()
-	fig.subplots_adjust(top=0.9)
-
-	if mode == 'plot':
-		for i in range(Bv):
-			axes[i].plot(range(logits_cdn[i].shape[0]), logits_cdn[i], c='b')
-			axes[i].set_title(f"Sample {i} ==> scores. The gt label is: {label[i]}", fontsize=8)
-
-	elif mode == 'cmap':
-		random = axes[0].imshow(np.random.random((1, int(C/vis_ratio))), cmap='viridis', interpolation='none')
-		fig.colorbar(random, ax=axes[0:], location='right', shrink=0.2)
-
-		for i in range(Bv):
-			im0 = axes[i].imshow(logits_cdn[i:i+1], cmap='viridis', interpolation='none')
-			axes[i].set_aspect(25)
-			axes[i].set_title(f"Sample {i} ==> scores. The gt label is: {label[i]}", fontsize=8)
-			axes[i,0].axis('off')
-			axes[i].get_yaxis().set_visible(False)
-
-	plt.show()
-
-
-def visualize_cl(batch):
-    (image1, image2), indices = batch
-    # image1_cdn, image2_cdn = image1.numpy(), image2.numpy()
-
-    B = image1.shape[0]
-    B_vis = min(B, 6)
-    
-    fig, axes = plt.subplots(nrows=B_vis, ncols=2, figsize=(10,10*B_vis/2))
-    fig.suptitle(f'Navigate dataloader of CVACT: current batch', fontsize=12)
-    fig.tight_layout()
-    fig.subplots_adjust(top=0.9)
-    
-    for i in range(B_vis):
-        axes[i,0].imshow(np.transpose(denormalize(image1[i]),(1,2,0)))
-        axes[i,0].set_title(
-			f"Sample {i} ==> ground image 1\nidx: {indices[i]}", fontsize=8)
-        axes[i,1].imshow(np.transpose(denormalize(image2[i]),(1,2,0)))
-        axes[i,1].set_title(
-			f"Sample {i} ==> ground image 2\nidx: {indices[i]}", fontsize=8)
-            
-    plt.show()

@@ -80,7 +80,8 @@ class Transformer(nn.Module):
         return x
 
 class ViT(nn.Module):
-    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 3, dim_head = 64, dropout = 0., emb_dropout = 0.):
+    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, 
+                 pool='cls', channels=3, dim_head=64, dropout=0., emb_dropout=0.):
         super().__init__()
         image_height, image_width = pair(image_size)
         patch_height, patch_width = pair(patch_size)
@@ -111,17 +112,17 @@ class ViT(nn.Module):
         )
 
     def forward(self, img):
-        x = self.to_patch_embedding(img)
+        x = self.to_patch_embedding(img) # (8, 224, 1024)
         b, n, _ = x.shape
 
-        cls_tokens = repeat(self.cls_token, '1 n d -> b n d', b = b)
-        x = torch.cat((cls_tokens, x), dim=1)
+        cls_tokens = repeat(self.cls_token, '1 n d -> b n d', b = b) # (8, 1, 1024)
+        x = torch.cat((cls_tokens, x), dim=1) # (8, 225, 1024)
         x += self.pos_embedding[:, :(n + 1)]
         x = self.dropout(x)
 
-        x = self.transformer(x)
+        x = self.transformer(x) # (8, 225, 1024)
 
-        x = x.mean(dim = 1) if self.pool == 'mean' else x[:, 0]
+        x = x.mean(dim = 1) if self.pool == 'mean' else x[:, 0] # (8, 1024)
 
         x = self.to_latent(x)
-        return self.mlp_head(x)
+        return self.mlp_head(x) # (8, 1000)

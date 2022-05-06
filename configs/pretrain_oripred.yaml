@@ -1,0 +1,48 @@
+dataset:
+  name: cvact
+  dataset_root_dir: 'data/CVACT_full'
+  dataset_version: 'tiny'
+  n_workers: 4
+
+model:
+  name: oripred
+  backbone: resnet18
+  pool: max
+  shared: True
+  img_size_w: 512
+  img_size_h: 112
+
+train:
+  seed: 42
+  batch_size: 8
+  n_epochs: 300
+  start_epoch: 0
+  eval_every: 1
+  patience: 0
+  save_every_epoch: False
+  threads: '6'
+  gpu_ids: '1'
+  no_cuda: False
+  n_gpu: 1
+  # save_path: 'work_dirs'
+  save_path: 'work_dirs_for_debug'
+  resume_path: ''
+  # resume_path: 'work_dirs/Apr27_00-59-08_crossview_vgg16_safa_cvact/checkpoints/checkpoint.pth.tar'
+  load_path: ''
+  # load_path: 'work_dirs/May03-2126_oripred_vgg16_max_shared_cvact_1k/checkpoints/checkpoint.pth.tar'
+  # load_path: 'work_dirs/May04-0255_oripred_resnet18_max_shared_cvact_1k/checkpoints/checkpoint.pth.tar'
+  load_sep_branch: False
+  load_only_backbone_pool: False
+  train_as_val: True
+  only_val: False
+  grad_cam: False
+
+hyperparams:
+  optim: 'adam'
+  weight_decay: 0.001
+  momentum: 0.9
+  lr: 0.0001
+  lr_step: 5
+  lr_gamma: 0.5
+  # margin for hard triplet loss (deprecated)
+  margin: 0.1

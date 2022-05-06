@@ -29,6 +29,7 @@ Modified by Jianfeng Cui
 '''
 
 
+import imp
 import numpy as np
 import torch
 import faiss
@@ -36,7 +37,7 @@ from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from orissl_cvm.datasets.cvact_dataset import ImagePairsFromList
 from orissl_cvm.augmentations import input_transform
-from orissl_cvm.tools.visualize import visualize_desc
+from orissl_cvm.tools.visualize import visualize_assets
 
 def val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device, writer, epoch_num=0, write_tboard=False, pbar_position=0):
     model.eval()
@@ -103,4 +104,14 @@ def val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device,
         if write_tboard:
             writer.add_scalar('Val/Recall@' + str(n), recall_at_n[i], epoch_num)
 
+    # # NOTE visualize the retrieval result
+    # num_samples = 4
+    # recall_at = 3
+    # i = 0
+    # pred = predictions[i:i+num_samples, :recall_at]
+    # g = gt[i:i+num_samples]
+    # img_query = torch.cat([val_dataset[x][0][0][None, ...] for x in range(i, i+num_samples)], 0)
+    # img_gt = torch.cat([val_dataset[x[0]][0][1][None, ...] for x in g], 0)
+    # img_pred = [torch.cat([val_dataset[x][0][1][None, ...] for x in pred[:, y]], 0) for y in range(recall_at)]
+    # visualize_assets(img_query, img_gt, *img_pred, mode='image', caption='Retrieval result')
     return all_recalls
