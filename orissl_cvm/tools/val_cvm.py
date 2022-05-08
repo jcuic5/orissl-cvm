@@ -38,6 +38,8 @@ from torch.utils.data import DataLoader
 from orissl_cvm.datasets.cvact_dataset import ImagePairsFromList
 from orissl_cvm.augmentations import input_transform
 from orissl_cvm.tools.visualize import visualize_assets
+from orissl_cvm.loss import *
+
 
 def val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device, writer, epoch_num=0, write_tboard=False, pbar_position=0):
     model.eval()

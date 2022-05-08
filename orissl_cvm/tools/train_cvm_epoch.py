@@ -36,6 +36,7 @@ from orissl_cvm.tools import humanbytes
 from orissl_cvm.datasets.cvact_dataset import CVACTDataset
 from orissl_cvm.tools import forward_hook, backward_hook, gen_cam
 from orissl_cvm.tools.visualize import visualize_assets
+from orissl_cvm.loss import *
 
 
 def train_epoch(train_dataset, training_data_loader, model, 
@@ -43,6 +44,10 @@ def train_epoch(train_dataset, training_data_loader, model,
                 epoch_num, cfg, writer):
     epoch_loss = 0
     n_batches = (len(train_dataset.qIdx) + cfg.train.batch_size - 1) // cfg.train.batch_size
+
+    if cfg.train.check_align_and_uniform:
+        epoch_loss_a = 0
+        epoch_loss_u = 0
 
     model.train()
     local_progress = tqdm(training_data_loader, position=1, leave=False, desc='Train Iter'.rjust(15))
@@ -93,6 +98,14 @@ def train_epoch(train_dataset, training_data_loader, model,
         loss /= n_triplets # normalise by actual number of negatives
         loss.backward()
 
+        # NOTE check alignment & uniformity properties of our positives
+        if cfg.train.check_align_and_uniform:
+            loss_a = align_loss(descQ_gr, descQ_sa)
+            loss_u = uniform_loss(descQ_gr) + uniform_loss(descQ_sa)
+            loss_a /= n_triplets
+            loss_u /= n_triplets
+
+        # NOTE check grad-cam
         if cfg.train.grad_cam:
             fmap_gr = fmp_list_gr[iteration].cpu().data.numpy().squeeze()
             grad_gr = grad_list_gr[iteration].cpu().data.numpy().squeeze()
@@ -109,13 +122,30 @@ def train_epoch(train_dataset, training_data_loader, model,
 
         batch_loss = loss.item()
         epoch_loss += batch_loss
+        if cfg.train.check_align_and_uniform:
+            batch_loss_a = loss_a.item()
+            epoch_loss_a += batch_loss_a
+            batch_loss_u = loss_u.item()
+            epoch_loss_u += batch_loss_u
         if iteration % (n_batches // 5) == 0 or n_batches <= 10:
-            tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch_num, iteration, n_batches, batch_loss))
-            writer.add_scalar('Train/Loss', batch_loss, ((epoch_num - 1) * n_batches) + iteration)
+            if not cfg.train.check_align_and_uniform:
+                tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch_num, iteration, n_batches, batch_loss))
+                writer.add_scalar('Train/Loss', batch_loss, ((epoch_num - 1) * n_batches) + iteration)
+            else: 
+                tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}, Align loss: {:.4f}, Uniform loss: {:.4f}".format(epoch_num, iteration, n_batches, batch_loss, batch_loss_a, batch_loss_u))
+                writer.add_scalar('Train/Loss', batch_loss, ((epoch_num - 1) * n_batches) + iteration)
+                writer.add_scalar('Train/Loss_a', batch_loss_a, ((epoch_num - 1) * n_batches) + iteration)
+                writer.add_scalar('Train/Loss_u', batch_loss_u, ((epoch_num - 1) * n_batches) + iteration)
 
     avg_loss = epoch_loss / n_batches
-    tqdm.write("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch_num, avg_loss))
-    writer.add_scalar('Train/AvgLoss', avg_loss, epoch_num)
+    if not cfg.train.check_align_and_uniform:
+        tqdm.write("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch_num, avg_loss))
+        writer.add_scalar('Train/AvgLoss', avg_loss, epoch_num)
+    else:
+        tqdm.write("===> Epoch {} Complete: Avg. Loss: {:.4f}, Align loss: {:.4f}, Uniform loss: ".format(epoch_num, avg_loss, epoch_loss_a / n_batches, batch_loss_u / n_batches))
+        writer.add_scalar('Train/AvgLoss', avg_loss, epoch_num)
+        writer.add_scalar('Train/AvgLoss_a', epoch_loss_a / n_batches, epoch_num)
+        writer.add_scalar('Train/AvgLoss_u', batch_loss_u / n_batches, epoch_num)
 
     # tqdm.write('Allocated: ' + humanbytes(torch.cuda.memory_allocated()))
     # tqdm.write('Cached:    ' + humanbytes(torch.cuda.memory_reserved()))

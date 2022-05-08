@@ -117,9 +117,9 @@ class SimSiamTransform():
         image_size = (image_size, image_size) if isinstance(image_size, int) else image_size            
         p_blur = 0.5
         self.transform = T.Compose([
-            T.RandomResizedCrop(image_size, scale=(0.2,1.0)),
-            # T.RandomCrop((image_size[0], int(image_size[1]/1.2))), # NOTE my setting
-            # T.Resize(image_size),
+            # T.RandomResizedCrop(image_size, scale=(0.2,1.0)),
+            T.RandomCrop((image_size[0], int(image_size[1]/1.2))), # NOTE my setting
+            T.Resize(image_size),
             T.RandomHorizontalFlip(),
             T.RandomApply([T.ColorJitter(0.4,0.4,0.4,0.1)], p=0.8),
             T.RandomGrayscale(p=0.2),
