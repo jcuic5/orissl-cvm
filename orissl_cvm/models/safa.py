@@ -126,8 +126,8 @@ class CrossViewOriPredModel(nn.Module):
             d3, d4 = self.f(x3), self.f(x4)
             d34 = torch.cat([d3, d4], dim=-1)
 
-        # visualize.visualize_assets(self.backbone(x1).mean(axis=1, keepdim=True), self.backbone(x2).mean(axis=1, keepdim=True), mode='image')
-        # visualize.visualize_assets(d12, d12, mode='descriptor')
+        visualize.visualize_assets(self.backbone(x1).mean(axis=1, keepdim=True), self.backbone(x2).mean(axis=1, keepdim=True), mode='image')
+        visualize.visualize_assets(d12, d12, mode='descriptor')
         output12 = self.classifier(d12)
         output34 = self.classifier(d34)
         # NOTE 
