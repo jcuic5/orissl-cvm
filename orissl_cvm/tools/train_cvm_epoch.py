@@ -95,6 +95,7 @@ def train_epoch(train_dataset, training_data_loader, model,
             qidx, nidx = qn_triplets[i][0].item(), qn_triplets[i][1].item()
             loss += criterion(descQ_gr[qidx: qidx+1], descQ_sa[qidx: qidx+1], descQ_sa[nidx: nidx+1])
             loss += criterion(descQ_sa[qidx: qidx+1], descQ_gr[qidx: qidx+1], descQ_gr[nidx: nidx+1])
+        # loss += uniform_loss(descQ_gr) + uniform_loss(descQ_sa)
         loss /= n_triplets # normalise by actual number of negatives
         loss.backward()
 
@@ -142,10 +143,10 @@ def train_epoch(train_dataset, training_data_loader, model,
         tqdm.write("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch_num, avg_loss))
         writer.add_scalar('Train/AvgLoss', avg_loss, epoch_num)
     else:
-        tqdm.write("===> Epoch {} Complete: Avg. Loss: {:.4f}, Align loss: {:.4f}, Uniform loss: ".format(epoch_num, avg_loss, epoch_loss_a / n_batches, batch_loss_u / n_batches))
+        tqdm.write("===> Epoch {} Complete: Avg. Loss: {:.4f}, Align loss: {:.4f}, Uniform loss: {:.4f}".format(epoch_num, avg_loss, epoch_loss_a / n_batches, epoch_loss_u / n_batches))
         writer.add_scalar('Train/AvgLoss', avg_loss, epoch_num)
         writer.add_scalar('Train/AvgLoss_a', epoch_loss_a / n_batches, epoch_num)
-        writer.add_scalar('Train/AvgLoss_u', batch_loss_u / n_batches, epoch_num)
+        writer.add_scalar('Train/AvgLoss_u', epoch_loss_u / n_batches, epoch_num)
 
     # tqdm.write('Allocated: ' + humanbytes(torch.cuda.memory_allocated()))
     # tqdm.write('Cached:    ' + humanbytes(torch.cuda.memory_reserved()))
