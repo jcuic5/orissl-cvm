@@ -3,18 +3,19 @@ dataset:
   dataset_root_dir: 'data/CVACT_full'
   dataset_version: 'tiny'
   n_workers: 4
+  train_loader_shuffle: False
 
 model:
   name: oripred
   backbone: resnet18
-  pool: max
+  pool: avg
   shared: True
   img_size_w: 512
   img_size_h: 112
 
 train:
   seed: 42
-  batch_size: 2
+  batch_size: 3
   n_epochs: 300
   start_epoch: 0
   eval_every: 1

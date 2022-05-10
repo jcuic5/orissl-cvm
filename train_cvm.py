@@ -130,7 +130,7 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(dataset=train_dataset, 
         num_workers=cfg.dataset.n_workers,
         batch_size=cfg.train.batch_size, 
-        shuffle=True,
+        shuffle=cfg.dataset.train_loader_shuffle,
         collate_fn = train_dataset.collate_fn, 
         pin_memory=cuda
     )

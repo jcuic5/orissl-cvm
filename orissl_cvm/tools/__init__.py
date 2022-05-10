@@ -26,6 +26,7 @@ Additional functions used during training.
 
 
 from email.policy import strict
+import imp
 from matplotlib.pyplot import axis
 import numpy as np
 from scipy.sparse.linalg import eigs
@@ -37,6 +38,11 @@ import logging
 from easydict import EasyDict
 from os.path import join, isfile
 from orissl_cvm.models import get_model
+from torchvision.transforms.functional import resize
+from torchvision.transforms import InterpolationMode
+import torch.nn.functional as F
+import copy
+import matplotlib.cm as mpl_color_map
 
 
 def pca(x: np.ndarray, num_pcs=None, subtract_mean=True):
@@ -216,9 +222,9 @@ def forward_hook(module, input, output, fmp_list):
 
 def gen_cam(fmp, grad):
     """ 依据梯度和特征图，生成cam
-    :param feature_map: np.array， in [C, H, W]
-    :param grads: np.array， in [C, H, W]
-    :return: np.array, [H, W]
+    :param feature_map: np.array， in [B, C, H, W]
+    :param grads: np.array， in [B, C, H, W]
+    :return: np.array, [B, H, W]
     """
     B, C, H, W = fmp.shape
     cam = np.zeros((B, H, W), dtype=np.float32)  # (B, H, W)
@@ -233,15 +239,43 @@ def gen_cam(fmp, grad):
     return cam
 
 
-def show_cam_on_image(img, mask, out_dir):
-    heatmap = cv2.applyColorMap(np.uint8(255*mask), cv2.COLORMAP_JET)
-    heatmap = np.float32(heatmap) / 255
-    cam = heatmap + np.float32(img)
-    cam = cam / np.max(cam)
+def show_cam_on_image(img, heatmap):
+    """Apply heatmap on image
+    """
+    B, C, H, W = img.shape
+    color_map = mpl_color_map.get_cmap('viridis')
+    # heatmap = resize(heatmap, (H, W), InterpolationMode.NEAREST).unsqueeze(dim=1).to(img.device)
+    heatmap = resize(heatmap, (H, W), InterpolationMode.NEAREST).unsqueeze(dim=1)
+    for i in range(B):
+        hmap = heatmap[i].squeeze(0).numpy()
+        hmap -= np.min(hmap)
+        hmap /= np.max(hmap)
+        # cmap = color_map(hmap)
+        # cmap = torch.tensor(cmap).to(img.device).permute(2, 0, 1)
+        # img[i] += cmap[:3] * cmap[3]
+        img[i] += torch.tensor(hmap).to(img.device).unsqueeze(dim=0) * 10
+    return img
 
-    path_cam_img = os.path.join(out_dir, "cam.jpg")
-    path_raw_img = os.path.join(out_dir, "raw.jpg")
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-    cv2.imwrite(path_cam_img, np.uint8(255 * cam))
-    cv2.imwrite(path_raw_img, np.uint8(255 * img))
+
+def apply_colormap_on_image(org_im, activation, colormap_name):
+    """
+        Apply heatmap on image
+    Args:
+        org_img (PIL img): Original image
+        activation_map (numpy arr): Activation map (grayscale) 0-255
+        colormap_name (str): Name of the colormap
+    """
+    # Get colormap
+    color_map = mpl_color_map.get_cmap(colormap_name)
+    no_trans_heatmap = color_map(activation)
+    # Change alpha channel in colormap to make sure original image is displayed
+    heatmap = copy.copy(no_trans_heatmap)
+    heatmap[:, :, 3] = 0.4
+    heatmap = Image.fromarray((heatmap*255).astype(np.uint8))
+    no_trans_heatmap = Image.fromarray((no_trans_heatmap*255).astype(np.uint8))
+
+    # Apply heatmap on image
+    heatmap_on_image = Image.new("RGBA", org_im.size)
+    heatmap_on_image = Image.alpha_composite(heatmap_on_image, org_im.convert('RGBA'))
+    heatmap_on_image = Image.alpha_composite(heatmap_on_image, heatmap)
+    return no_trans_heatmap, heatmap_on_image
