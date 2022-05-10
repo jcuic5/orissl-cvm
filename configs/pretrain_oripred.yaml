@@ -3,25 +3,26 @@ dataset:
   dataset_root_dir: 'data/CVACT_full'
   dataset_version: 'tiny'
   n_workers: 4
+  train_loader_shuffle: False
 
 model:
   name: oripred
   backbone: resnet18
-  pool: max
+  pool: avg
   shared: True
   img_size_w: 512
   img_size_h: 112
 
 train:
   seed: 42
-  batch_size: 8
+  batch_size: 3
   n_epochs: 300
   start_epoch: 0
   eval_every: 1
   patience: 0
   save_every_epoch: False
   threads: '6'
-  gpu_ids: '1'
+  gpu_ids: '0'
   no_cuda: False
   n_gpu: 1
   # save_path: 'work_dirs'

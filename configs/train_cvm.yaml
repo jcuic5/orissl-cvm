@@ -8,7 +8,7 @@ model:
   name: cvm
   backbone: vgg16
   pool: max
-  shared: False
+  shared: True
   img_size_w: 512
   img_size_h: 112
 
@@ -18,7 +18,7 @@ train:
   n_epochs: 80
   start_epoch: 0
   eval_every: 1
-  patience: 10
+  patience: 0
   save_every_epoch: False
   threads: '2'
   gpu_ids: '3'
@@ -37,7 +37,7 @@ train:
   load_only_backbone_pool: False
   train_as_val: False
   only_val: False
-  grad_cam: False
+  grad_cam: True
   check_align_and_uniform: True
 
 hyperparams:

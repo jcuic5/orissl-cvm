@@ -37,9 +37,12 @@ def random_slide_pano(img, mode='cls', num_dirs=4):
     elif mode == 'reg':
         # slide_w = random.randint(0, W - 1)
         # slide_w = random.randint(0, (W // 16) - 1) * 16 # vgg16 downsample ratio
-        # slide_w = random.randint(0, (W // 28) - 1) * 28 # resnet18 downsample ratio
-        slide_w = random.randint(0, (W // 28) - 1) * 14 # resnet18 downsample ratio
-        # slide_w = 0 # do nothing for debug
+        slide_w = random.randint(0, (W // 28) - 1) * 28 # resnet18 downsample ratio
+        # NOTE for debug
+        # slide_w = random.randint(0, (W // 28) - 1) * 14
+        # slide_w = random.randint(0, 1)
+        # slide_w = slide_w * (W // 28 - 1) * 14
+        # slide_w = 0
 
         # slide_w = random.random()
         # slide_w = int(slide_w * W // 2)

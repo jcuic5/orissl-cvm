@@ -47,23 +47,23 @@ def train_epoch(train_dataset, training_data_loader, model,
         optimizer.step()
         if scheduler is not None:
             scheduler.step()
-        # # NOTE visualize batch and score for debug
-        # # visualize_plain_batch_pretrain(batch)
-        # Bv = min(B, 6)
-        # fig, axes = plt.subplots(nrows=Bv, ncols=4, figsize=(10,10 * Bv / 2))
-        # fig.suptitle(f'Navigate dataloader of CVACT: current batch', fontsize=12)
-        # fig.tight_layout()
-        # fig.subplots_adjust(top=0.9)
+        # NOTE visualize batch and score for debug
+        # visualize_plain_batch_pretrain(batch)
+        Bv = min(B, 6)
+        fig, axes = plt.subplots(nrows=Bv, ncols=4, figsize=(10,10 * Bv / 2))
+        fig.suptitle(f'Navigate dataloader of CVACT: current batch', fontsize=12)
+        fig.tight_layout()
+        fig.subplots_adjust(top=0.9)
 
-        # for i in range(Bv):
-        #     axes[i,0].imshow(np.transpose(denormalize(img_gr1[i].detach().cpu().numpy()),(1,2,0)))
-        #     axes[i,0].set_title(f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys_gr[i]}, label: {label1[i]}", fontsize=8)
-        #     axes[i,1].imshow(np.transpose(denormalize(img_gr2[i].detach().cpu().numpy()),(1,2,0)))
-        #     axes[i,2].imshow(np.transpose(denormalize(img_sa1[i].detach().cpu().numpy()),(1,2,0)))
-        #     axes[i,2].set_title(f"Sample {i} ==> satellite image\nidx: {indices[i]}, file name: {keys_sa[i]}, label: {label2[i]}", fontsize=8)
-        #     axes[i,3].imshow(np.transpose(denormalize(img_sa2[i].detach().cpu().numpy()),(1,2,0)))
-        # plt.show()
-        # # visualize_scores(output, label)
+        for i in range(Bv):
+            axes[i,0].imshow(np.transpose(denormalize(img_gr1[i].detach().cpu().numpy()),(1,2,0)))
+            axes[i,0].set_title(f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys_gr[i]}, label: {label1[i]}", fontsize=8)
+            axes[i,1].imshow(np.transpose(denormalize(img_gr2[i].detach().cpu().numpy()),(1,2,0)))
+            axes[i,2].imshow(np.transpose(denormalize(img_sa1[i].detach().cpu().numpy()),(1,2,0)))
+            axes[i,2].set_title(f"Sample {i} ==> satellite image\nidx: {indices[i]}, file name: {keys_sa[i]}, label: {label2[i]}", fontsize=8)
+            axes[i,3].imshow(np.transpose(denormalize(img_sa2[i].detach().cpu().numpy()),(1,2,0)))
+        plt.show()
+        # visualize_scores(output, label)
 
         batch_loss = loss.item()
         epoch_loss += batch_loss

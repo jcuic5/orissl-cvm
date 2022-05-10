@@ -34,10 +34,11 @@ from tqdm.auto import trange, tqdm
 from torch.utils.data import DataLoader
 from orissl_cvm.tools import humanbytes
 from orissl_cvm.datasets.cvact_dataset import CVACTDataset
-from orissl_cvm.tools import forward_hook, backward_hook, gen_cam
+from orissl_cvm.tools import forward_hook, backward_hook, gen_cam, show_cam_on_image
 from orissl_cvm.tools.visualize import visualize_assets
 from orissl_cvm.loss import *
-
+import torchvision.transforms.functional as F
+from torchvision.transforms import InterpolationMode
 
 def train_epoch(train_dataset, training_data_loader, model, 
                 optimizer, scheduler, criterion, device, 
@@ -53,16 +54,24 @@ def train_epoch(train_dataset, training_data_loader, model,
     local_progress = tqdm(training_data_loader, position=1, leave=False, desc='Train Iter'.rjust(15))
 
     if cfg.train.grad_cam:
-        fmp_list_gr, fmp_list_sa = [], []
-        grad_list_gr, grad_list_sa = [], []
-        fh_gr = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list_gr)
-        bh_gr = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list_gr)
-        fh_sa = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list_sa)
-        bh_sa = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list_sa)
-        model.nn_model_gr.backbone[-1].register_forward_hook(fh_gr)
-        model.nn_model_gr.backbone[-1].register_full_backward_hook(bh_gr)
-        model.nn_model_sa.backbone[-1].register_forward_hook(fh_sa)
-        model.nn_model_sa.backbone[-1].register_full_backward_hook(bh_sa)
+        if not cfg.model.shared:
+            fmp_list_gr, fmp_list_sa = [], []
+            grad_list_gr, grad_list_sa = [], []
+            fh_gr = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list_gr)
+            bh_gr = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list_gr)
+            fh_sa = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list_sa)
+            bh_sa = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list_sa)
+            model.nn_model_gr.backbone[-1].register_forward_hook(fh_gr)
+            model.nn_model_gr.backbone[-1].register_full_backward_hook(bh_gr)
+            model.nn_model_sa.backbone[-1].register_forward_hook(fh_sa)
+            model.nn_model_sa.backbone[-1].register_full_backward_hook(bh_sa)
+        else:
+            fmp_list = []
+            grad_list = []
+            fh = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list)
+            bh = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list)
+            model.backbone[-1].register_forward_hook(fh)
+            model.backbone[-1].register_full_backward_hook(bh)
 
     for iteration, batch in enumerate(local_progress):
         # prepare data
@@ -72,6 +81,7 @@ def train_epoch(train_dataset, training_data_loader, model,
         input_data, meta = batch
         query_gr, query_sa = input_data
         indices, keys_gr, keys_sa = meta['indices'], meta['keys_gr'], meta['keys_sa']
+        B, C, H, W = query_gr.shape
         qpn_mat = torch.from_numpy(train_dataset.qpn_matrix[indices, :][:, indices]).to(device)
         qn_triplets = torch.nonzero(qpn_mat == 0, as_tuple=False)
         n_triplets = qn_triplets.shape[0]
@@ -108,12 +118,21 @@ def train_epoch(train_dataset, training_data_loader, model,
 
         # NOTE check grad-cam
         if cfg.train.grad_cam:
-            fmap_gr = fmp_list_gr[iteration].cpu().data.numpy().squeeze()
-            grad_gr = grad_list_gr[iteration].cpu().data.numpy().squeeze()
-            fmap_sa = fmp_list_sa[iteration].cpu().data.numpy().squeeze()
-            grad_sa = grad_list_sa[iteration].cpu().data.numpy().squeeze()
-            cam_gr, cam_sa = gen_cam(fmap_gr, grad_gr), gen_cam(fmap_sa, grad_sa)
-            visualize_assets(query_gr, torch.tensor(cam_gr), query_sa, torch.tensor(cam_sa))
+            if not cfg.model.shared:
+                fmap_gr = fmp_list_gr[iteration].cpu().data.numpy().squeeze()
+                grad_gr = grad_list_gr[iteration].cpu().data.numpy().squeeze()
+                fmap_sa = fmp_list_sa[iteration].cpu().data.numpy().squeeze()
+                grad_sa = grad_list_sa[iteration].cpu().data.numpy().squeeze()
+            else:
+                fmap_gr = fmp_list[2*iteration].cpu().data.numpy().squeeze()
+                grad_gr = grad_list[2*iteration].cpu().data.numpy().squeeze()
+                fmap_sa = fmp_list[2*iteration+1].cpu().data.numpy().squeeze()
+                grad_sa = grad_list[2*iteration+1].cpu().data.numpy().squeeze()
+            cam_gr = gen_cam(fmap_gr, grad_gr)
+            cam_sa = gen_cam(fmap_sa, grad_sa)
+            visualize_assets(query_gr, torch.tensor(fmap_gr).mean(1), query_sa, torch.tensor(fmap_sa).mean(1))
+            # visualize_assets(query_gr, torch.tensor(cam_gr), query_sa, torch.tensor(cam_sa))
+            visualize_assets(show_cam_on_image(query_gr, torch.tensor(fmap_gr).mean(1)), show_cam_on_image(query_sa, torch.tensor(fmap_sa).mean(1)))
             visualize_assets(descQ_gr, descQ_sa, mode='descriptor')
 
         optimizer.step()
