@@ -1,7 +1,7 @@
 import imp
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision.models import resnet50, resnet18, vgg16, mobilenet_v2
+from torchvision.models import resnet18, vgg16, mobilenet_v2
 from .vit import ViT
 
 class Flatten(nn.Module):
@@ -18,9 +18,15 @@ class L2Norm(nn.Module):
         return F.normalize(input_data, p=2, dim=self.dim)
 
 
+class LayerNorm(nn.Module):
+    def forward(self, input_data):
+        return F.layer_norm(input_data, normalized_shape=input_data.shape[-3:])
+
+
 class MinusIdentity(nn.Module):
     def forward(self, input_data):
         return - input_data
+
 
 def _initialize_weights(m):
     if isinstance(m, nn.Conv2d):
@@ -36,8 +42,10 @@ def _initialize_weights(m):
 
 
 def get_backbone(name):
-    if name == 'resnet18' or name == 'resnet50':
-        backbone = eval(f"{name}()")
+    if name == 'resnet18':
+        # backbone = resnet18(norm_layer=lambda x : nn.BatchNorm2d(x, track_running_stats=False))
+        # backbone = resnet18(norm_layer=lambda x : nn.Identity())
+        backbone = resnet18(norm_layer=lambda x : LayerNorm())
         layers = list(backbone.children())[:-2]
         # NOTE optionally if we have dim less than 224, don't half the size at conv_1
         # layers[0].stride = 1
@@ -90,7 +98,7 @@ def get_pool(name, norm=True):
         return nn.Sequential(*[MinusIdentity(), nn.AdaptiveMaxPool2d((1, 1)), Flatten(), L2Norm()]) if norm else \
                nn.Sequential(*[MinusIdentity(), nn.AdaptiveMaxPool2d((1, 1)), Flatten()])
     elif name == 'safa':
-        return SPEPool(fmp_size=(7,32), num_spe=8, norm=norm)
+        return SPEPool(fmp_size=(7,32), num_spe=1, norm=norm)
     elif name == 'identity':
         return nn.Identity()
     else:
@@ -118,3 +126,4 @@ def get_model(model_cfg):
         raise NotImplementedError
 
     return model
+

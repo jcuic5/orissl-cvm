@@ -132,7 +132,7 @@ if __name__ == "__main__":
     training_data_loader = DataLoader(dataset=train_dataset, 
         num_workers=cfg.dataset.n_workers,
         batch_size=cfg.train.batch_size, 
-        shuffle=True,
+        shuffle=cfg.dataset.train_loader_shuffle,
         collate_fn = train_dataset.collate_fn, 
         pin_memory=cuda
     )
@@ -178,8 +178,7 @@ if __name__ == "__main__":
         train_epoch(train_dataset, training_data_loader, model, optimizer, scheduler, criterion, device, epoch, cfg, writer)
         
         if (epoch % cfg.train.eval_every) == 0:
-            score = val(val_data_loader, model, device, cfg, writer, epoch,
-                          write_tboard=True, pbar_position=1)
+            score = val(val_data_loader, model, device, cfg, writer, epoch, write_tboard=True, pbar_position=1)
             is_best = score > best_score
             if is_best:
                 not_improved = 0

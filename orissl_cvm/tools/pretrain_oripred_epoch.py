@@ -1,3 +1,4 @@
+import imp
 import numpy as np
 import torch
 from tqdm.auto import tqdm
@@ -6,6 +7,7 @@ from orissl_cvm.tools import humanbytes
 from orissl_cvm.datasets.cvact_dataset import CVACTDataset
 import matplotlib.pyplot as plt
 from orissl_cvm.tools.visualize import denormalize
+from orissl_cvm.loss import cycle_mse_loss
 
 
 def train_epoch(train_dataset, training_data_loader, model, 
@@ -41,36 +43,42 @@ def train_epoch(train_dataset, training_data_loader, model,
         optimizer.zero_grad()
         loss_gr = criterion(output_gr, label1)
         loss_sa = criterion(output_sa, label2)
+        # loss_gr = cycle_mse_loss(output_gr, label1)
+        # loss_sa = cycle_mse_loss(output_sa, label2)
         loss = loss_gr + loss_sa
         loss /= B
         loss.backward()
         optimizer.step()
         if scheduler is not None:
             scheduler.step()
-        # NOTE visualize batch and score for debug
-        # visualize_plain_batch_pretrain(batch)
-        Bv = min(B, 6)
-        fig, axes = plt.subplots(nrows=Bv, ncols=4, figsize=(10,10 * Bv / 2))
-        fig.suptitle(f'Navigate dataloader of CVACT: current batch', fontsize=12)
-        fig.tight_layout()
-        fig.subplots_adjust(top=0.9)
+        # # NOTE visualize batch and score for debug
+        # # visualize_plain_batch_pretrain(batch)
+        # Bv = min(B, 6)
+        # fig, axes = plt.subplots(nrows=Bv, ncols=4, figsize=(10,10 * Bv / 2))
+        # fig.suptitle(f'Navigate dataloader of CVACT: current batch', fontsize=12)
+        # fig.tight_layout()
+        # fig.subplots_adjust(top=0.9)
 
-        for i in range(Bv):
-            axes[i,0].imshow(np.transpose(denormalize(img_gr1[i].detach().cpu().numpy()),(1,2,0)))
-            axes[i,0].set_title(f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys_gr[i]}, label: {label1[i]}", fontsize=8)
-            axes[i,1].imshow(np.transpose(denormalize(img_gr2[i].detach().cpu().numpy()),(1,2,0)))
-            axes[i,2].imshow(np.transpose(denormalize(img_sa1[i].detach().cpu().numpy()),(1,2,0)))
-            axes[i,2].set_title(f"Sample {i} ==> satellite image\nidx: {indices[i]}, file name: {keys_sa[i]}, label: {label2[i]}", fontsize=8)
-            axes[i,3].imshow(np.transpose(denormalize(img_sa2[i].detach().cpu().numpy()),(1,2,0)))
-        plt.show()
-        # visualize_scores(output, label)
+        # for i in range(Bv):
+        #     axes[i,0].imshow(np.transpose(denormalize(img_gr1[i].detach().cpu().numpy()),(1,2,0)))
+        #     axes[i,0].set_title(f"Sample {i} ==> ground image\nidx: {indices[i]}, file name: {keys_gr[i]}, label: {label1[i]}", fontsize=8)
+        #     axes[i,1].imshow(np.transpose(denormalize(img_gr2[i].detach().cpu().numpy()),(1,2,0)))
+        #     axes[i,2].imshow(np.transpose(denormalize(img_sa1[i].detach().cpu().numpy()),(1,2,0)))
+        #     axes[i,2].set_title(f"Sample {i} ==> satellite image\nidx: {indices[i]}, file name: {keys_sa[i]}, label: {label2[i]}", fontsize=8)
+        #     axes[i,3].imshow(np.transpose(denormalize(img_sa2[i].detach().cpu().numpy()),(1,2,0)))
+        # plt.show()
+        # # visualize_scores(output, label)
 
         batch_loss = loss.item()
         epoch_loss += batch_loss
+        correct_gr = ((output_gr - label1).abs() < 0.1).sum().item()
+        correct_sa = ((output_sa - label2).abs() < 0.1).sum().item()
+
         if n_batches <= 10 or iteration % (n_batches // 5) == 0:
             # tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}, Accuracy: {:.4f}, {:.4f}".format(
             #     epoch_num, iteration, n_batches, batch_loss, (pred_gr == label1).sum().item() / B, (pred_sa == label2).sum().item() / B))
             tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch_num, iteration, n_batches, batch_loss))
+            tqdm.write("==> Epoch[{}]({}/{}): Accuracy: {:.4f}, {:.4f}".format(epoch_num, iteration, n_batches, correct_gr / B, correct_sa / B))
             writer.add_scalar('Train/Loss', batch_loss, ((epoch_num - 1) * n_batches) + iteration)
 
     avg_loss = epoch_loss / n_batches

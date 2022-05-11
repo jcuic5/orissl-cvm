@@ -36,13 +36,13 @@ def random_slide_pano(img, mode='cls', num_dirs=4):
         # img[..., slide_w:slide_w+10] = 0
     elif mode == 'reg':
         # slide_w = random.randint(0, W - 1)
-        # slide_w = random.randint(0, (W // 16) - 1) * 16 # vgg16 downsample ratio
-        slide_w = random.randint(0, (W // 28) - 1) * 28 # resnet18 downsample ratio
+        # slide_w = random.randint(0, 15) * 32 # vgg16 downsample ratio
+        # slide_w = random.randint(0, 15) * 32 # resnet18 downsample ratio
         # NOTE for debug
-        # slide_w = random.randint(0, (W // 28) - 1) * 14
+        slide_w = random.randint(0, 3) * 32
         # slide_w = random.randint(0, 1)
         # slide_w = slide_w * (W // 28 - 1) * 14
-        # slide_w = 0
+        # slide_w = 3 * 16
 
         # slide_w = random.random()
         # slide_w = int(slide_w * W // 2)
@@ -55,7 +55,7 @@ def random_slide_pano(img, mode='cls', num_dirs=4):
         #     label = - (slide_w + W // 2) / W
 
         img = np.concatenate([img[..., -slide_w:], img[..., :-slide_w]], axis=-1)
-        label = slide_w / W
+        label = slide_w / W + 1 # NOTE plus 1 for keep a positive value
         
     else:
         raise NotImplementedError
@@ -106,10 +106,10 @@ class OriLabelPairTransform():
     def __call__(self, img_gr, img_sa):
         img_gr1, l_gr1 = self.shift(self.transform(img_gr))
         img_gr2, l_gr2 = self.shift(self.transform(img_gr))
-        l1 = l_gr1 - l_gr2 if l_gr1 - l_gr2 >= 0 else l_gr1 - l_gr2 + 1
+        l1 = l_gr1 - l_gr2
         img_sa1, l_sa1 = self.shift(self.transform(img_sa))
         img_sa2, l_sa2 = self.shift(self.transform(img_sa))
-        l2 = l_sa1 - l_sa2 if l_sa1 - l_sa2 >= 0 else l_sa1 - l_sa2 + 1
+        l2 = l_sa1 - l_sa2
         return img_gr1, img_gr2, l1, img_sa1, img_sa2, l2
 
 

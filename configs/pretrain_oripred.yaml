@@ -8,21 +8,21 @@ dataset:
 model:
   name: oripred
   backbone: resnet18
-  pool: avg
+  pool: safa
   shared: True
   img_size_w: 512
   img_size_h: 112
 
 train:
   seed: 42
-  batch_size: 3
+  batch_size: 8
   n_epochs: 300
   start_epoch: 0
   eval_every: 1
   patience: 0
   save_every_epoch: False
   threads: '6'
-  gpu_ids: '0'
+  gpu_ids: '3'
   no_cuda: False
   n_gpu: 1
   # save_path: 'work_dirs'
@@ -37,6 +37,7 @@ train:
   train_as_val: True
   only_val: False
   grad_cam: False
+  
 
 hyperparams:
   optim: 'adam'

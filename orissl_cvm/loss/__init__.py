@@ -12,6 +12,13 @@ class SoftTripletLoss(object):
         return loss
 
 
+def cycle_mse_loss(x, y):
+    loss1 = (x - y).abs()
+    loss2 = (x - (1 - y)).abs()
+    loss = torch.minimum(loss1, loss2)
+    return loss.sum()
+
+
 def align_loss(x, y, alpha=2):
     '''From https://github.com/SsnL/align_uniform'''
     return (x - y).norm(p=2, dim=1).pow(alpha).mean()

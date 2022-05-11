@@ -49,7 +49,7 @@ def visualize_assets(*assets, mode='image', max_nrows=6, dcn=True, caption='Batc
 					axes[i,j].imshow(denormalize(im))
 			elif mode == 'descriptor':
 				axes[i,j].imshow(assets[j][i:i+1], cmap='viridis', interpolation='none')
-				axes[i,j].set_aspect(5*10/vis_ratio)
+				axes[i,j].set_aspect(5*25/vis_ratio)
 				axes[i,j].set_title(f"Sample {i} ==> ground descriptor", fontsize=8)
 				# axes[i,j].axis('off')
 				axes[i,j].get_yaxis().set_visible(False)
