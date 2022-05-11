@@ -54,7 +54,9 @@ def get_backbone(name):
     elif name == 'vgg16' or name == 'mobilenet_v2':
         backbone = eval(f"{name}()")
         # drop the last two layers: ReLU and MaxPool2d
-        layers = list(backbone.features.children())[:-2]
+        layers = list(backbone.features.children())[:-1]
+        # layers = [x for x in layers if not isinstance(x, nn.ReLU)]
+
         # optionally freeze part of the backbone
         # only train conv5_1, conv5_2, and conv5_3 (leave rest same as Imagenet trained weights)
         # for layer in layers[:-5]:
@@ -98,9 +100,21 @@ def get_pool(name, norm=True):
         return nn.Sequential(*[MinusIdentity(), nn.AdaptiveMaxPool2d((1, 1)), Flatten(), L2Norm()]) if norm else \
                nn.Sequential(*[MinusIdentity(), nn.AdaptiveMaxPool2d((1, 1)), Flatten()])
     elif name == 'safa':
-        return SPEPool(fmp_size=(7,32), num_spe=1, norm=norm)
+        return SPEPool(fmp_size=(7, 32), num_spe=1, norm=norm)
     elif name == 'identity':
         return nn.Identity()
+    elif name == 'fc':
+        return nn.Sequential(
+            nn.AdaptiveAvgPool2d((7, 8)),
+            nn.Flatten(start_dim=1, end_dim=-1),
+            nn.Linear(28672, 4096),
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(4096, 512)
+        )
     else:
         raise NotImplementedError
 

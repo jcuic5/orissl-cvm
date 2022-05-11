@@ -245,7 +245,7 @@ def show_cam_on_image(img, heatmap):
     B, C, H, W = img.shape
     color_map = mpl_color_map.get_cmap('viridis')
     # heatmap = resize(heatmap, (H, W), InterpolationMode.NEAREST).unsqueeze(dim=1).to(img.device)
-    heatmap = resize(heatmap, (H, W), InterpolationMode.NEAREST).unsqueeze(dim=1)
+    heatmap = resize(heatmap, (H, W), InterpolationMode.BILINEAR).unsqueeze(dim=1)
     for i in range(B):
         hmap = heatmap[i].squeeze(0).numpy()
         hmap -= np.min(hmap)
@@ -253,7 +253,7 @@ def show_cam_on_image(img, heatmap):
         # cmap = color_map(hmap)
         # cmap = torch.tensor(cmap).to(img.device).permute(2, 0, 1)
         # img[i] += cmap[:3] * cmap[3]
-        img[i] += torch.tensor(hmap).to(img.device).unsqueeze(dim=0) * 10
+        img[i] += torch.tensor(hmap).to(img.device).unsqueeze(dim=0) * 15
     return img
 
 

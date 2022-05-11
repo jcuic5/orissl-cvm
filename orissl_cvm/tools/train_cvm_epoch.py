@@ -107,7 +107,11 @@ def train_epoch(train_dataset, training_data_loader, model,
             loss += criterion(descQ_sa[qidx: qidx+1], descQ_gr[qidx: qidx+1], descQ_gr[nidx: nidx+1])
         # loss += uniform_loss(descQ_gr) + uniform_loss(descQ_sa)
         loss /= n_triplets # normalise by actual number of negatives
-        loss.backward()
+        if cfg.train.grad_cam:
+            act = (descQ_gr * descQ_sa).sum()
+            act.backward()
+        else:
+            loss.backward()
 
         # NOTE check alignment & uniformity properties of our positives
         if cfg.train.check_align_and_uniform:
@@ -130,9 +134,10 @@ def train_epoch(train_dataset, training_data_loader, model,
                 grad_sa = grad_list[2*iteration+1].cpu().data.numpy().squeeze()
             cam_gr = gen_cam(fmap_gr, grad_gr)
             cam_sa = gen_cam(fmap_sa, grad_sa)
-            visualize_assets(query_gr, torch.tensor(fmap_gr).mean(1), query_sa, torch.tensor(fmap_sa).mean(1))
+            # visualize_assets(query_gr, torch.tensor(fmap_gr).mean(1), query_sa, torch.tensor(fmap_sa).mean(1))
+            # visualize_assets(show_cam_on_image(query_gr, torch.tensor(fmap_gr).mean(1)), show_cam_on_image(query_sa, torch.tensor(fmap_sa).mean(1)))
             # visualize_assets(query_gr, torch.tensor(cam_gr), query_sa, torch.tensor(cam_sa))
-            visualize_assets(show_cam_on_image(query_gr, torch.tensor(fmap_gr).mean(1)), show_cam_on_image(query_sa, torch.tensor(fmap_sa).mean(1)))
+            visualize_assets(show_cam_on_image(query_gr, torch.tensor(cam_gr)), show_cam_on_image(query_sa, torch.tensor(cam_sa)))
             visualize_assets(descQ_gr, descQ_sa, mode='descriptor')
 
         optimizer.step()
