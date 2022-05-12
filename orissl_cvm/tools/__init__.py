@@ -161,36 +161,35 @@ def log_config_to_file(cfg, pre='cfg', logger=None):
 
 
 def get_model_with_ckpt(cfg, logger):
-    model, checkpoint = None, None
+    model, ckpt = None, None
 
     if cfg.train.resume_path and cfg.train.load_path:
         raise RuntimeError("===> Resume path and load path are both indicated!")
-
     elif cfg.train.load_path:
         if cfg.train.load_sep_branch:
             load_path_gr, load_path_sa = cfg.train.load_path.split(',')
             if isfile(load_path_gr) and isfile(load_path_sa):
                 logger.info("===> loading branch weights separately '{}'".format(cfg.train.load_path))
-                encoder_gr = torch.load(load_path_gr, map_location=lambda storage, loc: storage)
-                encoder_sa = torch.load(load_path_sa, map_location=lambda storage, loc: storage)
+                ckpt_gr = torch.load(load_path_gr, map_location=lambda storage, loc: storage)
+                ckpt_sa = torch.load(load_path_sa, map_location=lambda storage, loc: storage)
                 model = get_model(cfg.model)
                 # NOTE For debug, check if params are loaded
-                # p1 = next(iter(model.nn_model_gr.backbone.parameters()))
-                # p2 = encoder_gr['state_dict']['backbone.0.weight']
-                model.nn_model_gr.load_state_dict({k : v for k, v in encoder_gr['state_dict'].items() if k.startswith('backbone.') or k.startswith('pool.')}, strict=True)
-                model.nn_model_sa.load_state_dict({k : v for k, v in encoder_sa['state_dict'].items() if k.startswith('backbone.') or k.startswith('pool.')}, strict=True)
+                # p1 = next(iter(model.model_gr.backbone.parameters()))
+                # p2 = model_gr['state_dict']['backbone.0.weight']
+                model.features_gr.load_state_dict({k : v for k, v in ckpt_gr['state_dict'].items() if k.startswith('features.')}, strict=True)
+                model.features_sa.load_state_dict({k : v for k, v in ckpt_sa['state_dict'].items() if k.startswith('features.')}, strict=True)
                 logger.info("===> loaded branch weights separately '{}'".format(cfg.train.load_path))
             else:
                 raise FileNotFoundError("===> no checkpoint found at '{}'".format(cfg.train.load_path))
         else:
             if isfile(cfg.train.load_path):                    
                 logger.info("===> loading model weights '{}'".format(cfg.train.load_path))
-                checkpoint = torch.load(cfg.train.load_path, map_location=lambda storage, loc: storage)
+                ckpt = torch.load(cfg.train.load_path, map_location=lambda storage, loc: storage)
                 model = get_model(cfg.model)
-                if cfg.train.load_only_backbone_pool:
-                    model.load_state_dict({k : v for k, v in checkpoint['state_dict'].items() if k.startswith('backbone.') or k.startswith('pool.')}, strict=True)
+                if cfg.train.load_only_backbone:
+                    model.load_state_dict({k : v for k, v in ckpt['state_dict'].items() if k.startswith('features.')}, strict=True)
                 else:
-                    model.load_state_dict(checkpoint['state_dict'], strict=True)
+                    model.load_state_dict(ckpt['state_dict'], strict=True)
                 logger.info("===> loaded model weights '{}'".format(cfg.train.load_path))
             else:
                 raise FileNotFoundError("===> no checkpoint found at '{}'".format(cfg.train.load_path))
@@ -198,18 +197,17 @@ def get_model_with_ckpt(cfg, logger):
     elif cfg.train.resume_path: # if already started training earlier and continuing
         if isfile(cfg.train.resume_path):
             logger.info("===> loading checkpoint '{}'".format(cfg.train.resume_path))
-            checkpoint = torch.load(cfg.train.resume_path, map_location=lambda storage, loc: storage)
+            ckpt = torch.load(cfg.train.resume_path, map_location=lambda storage, loc: storage)
             model = get_model(cfg.model)
-            model.load_state_dict(checkpoint['state_dict'], strict=True)
-            cfg.train.start_epoch = checkpoint['epoch']
+            model.load_state_dict(ckpt['state_dict'], strict=True)
+            cfg.train.start_epoch = ckpt['epoch']
             logger.info("===> loaded checkpoint '{}'".format(cfg.train.resume_path))
         else:
             raise FileNotFoundError("===> no checkpoint found at '{}'".format(cfg.train.resume_path))
-
     else: # if not, assume fresh training instance and will initially generate cluster centroids
         model = get_model(cfg.model)
 
-    return model, checkpoint
+    return model, ckpt
 
 
 def backward_hook(module, grad_in, grad_out, grad_list):

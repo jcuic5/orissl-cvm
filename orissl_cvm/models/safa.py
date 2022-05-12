@@ -1,10 +1,11 @@
+from cv2 import norm
 from matplotlib.pyplot import axis
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from orissl_cvm.tools import visualize
-from .__init__ import get_backbone, get_pool, get_encoder, _initialize_weights
+from .__init__ import get_backbone, get_pool, _initialize_weights
 from .simsiam import SimSiam
 from .vit import ViT
 
@@ -55,39 +56,38 @@ class SPE(nn.Module):
 
 
 class SPEPool(nn.Module):
-    def __init__(self, fmp_size, num_spe=8, norm=True):
+    def __init__(self, fmp_size, num_spe=8):
         super(SPEPool, self).__init__()
         self.num_spe = num_spe
         for i in range(num_spe): 
             self.add_module(f'spe_{i}', SPE(fmp_size))
-        self.norm = norm
 
     def forward(self, x):
         feat = torch.cat([spe_i(x) for spe_i in self.children()], dim=1)
-        return F.normalize(feat, p=2, dim=1) if self.norm else feat
+        return feat
 
 
 class CrossViewMatchingModel(nn.Module):
     def __init__(self, backbone, pool, shared=False):
         super(CrossViewMatchingModel, self).__init__()
-        if not shared:
-            self.nn_model_gr = get_encoder(get_backbone(backbone), get_pool(pool, norm=True))
-            self.nn_model_sa = get_encoder(get_backbone(backbone), get_pool(pool, norm=True))
-        else:
-            self.backbone = get_backbone(backbone)
-            self.pool = get_pool(pool, norm=True)
         self.shared = shared
+        if not shared:
+            self.features_gr = get_backbone(backbone)
+            self.features_sa = get_backbone(backbone)
+        else:
+            self.features = get_backbone(backbone)
+        self.pool = get_pool(pool, norm=True)
 
     def forward(self, x1, x2):
         if not self.shared:
-            fmp_gr = self.nn_model_gr.backbone(x1)
-            desc_gr = self.nn_model_gr.pool(fmp_gr)
-            fmp_sa = self.nn_model_sa.backbone(x2)
-            desc_sa = self.nn_model_sa.pool(fmp_sa)
-        else:
-            fmp_gr = self.backbone(x1)
+            fmp_gr = self.features_gr(x1)
             desc_gr = self.pool(fmp_gr)
-            fmp_sa = self.backbone(x2)
+            fmp_sa = self.features_sa(x2)
+            desc_sa = self.pool(fmp_sa)
+        else:
+            fmp_gr = self.features(x1)
+            desc_gr = self.pool(fmp_gr)
+            fmp_sa = self.features(x2)
             desc_sa = self.pool(fmp_sa)
         return desc_gr, desc_sa
 
@@ -95,35 +95,37 @@ class CrossViewMatchingModel(nn.Module):
 class CrossViewOriPredModel(nn.Module):
     def __init__(self, backbone, pool, shared=False):
         super(CrossViewOriPredModel, self).__init__()
-        if not shared:
-            self.nn_model_gr = get_encoder(get_backbone(backbone), get_pool(pool, norm=False))
-            self.nn_model_sa = get_encoder(get_backbone(backbone), get_pool(pool, norm=False))
-
-            self.f1 = lambda x : self.nn_model_gr.pool(self.nn_model_gr.backbone(x))
-            self.f2 = lambda x : self.nn_model_sa.pool(self.nn_model_sa.backbone(x))
-        else:
-            self.backbone = get_backbone(backbone)
-            self.pool = get_pool(pool, norm=False)
-            self.f = lambda x : self.pool(self.backbone(x))
-
         self.shared = shared
+        if not shared:
+            self.features_gr = get_backbone(backbone)
+            self.features_sa = get_backbone(backbone)
+        else:
+            self.features = get_backbone(backbone)
+        self.pool = get_pool(pool, norm=False)
+
         # self.classifier = nn.Linear(1, 1, bias=True)
         # nn.init.constant_(self.classifier.weight, 1)
         # nn.init.constant_(self.classifier.bias, 0)
-        self.classifier = nn.Linear(1024, 1, bias=True)
-        # self.classifier = nn.Linear(8192, 1, bias=True)
-
+        self.classifier = nn.Sequential(
+                           nn.Linear(1024, 256),
+                           nn.ReLU(),
+                           nn.Dropout(),
+                           nn.Linear(256, 1))
 
     def forward(self, x1, x2, x3, x4):
         if not self.shared:
-            d1, d2 = self.f1(x1), self.f1(x2)
+            d1 = self.pool(self.features_gr(x1))
+            d2 = self.pool(self.features_gr(x2))
             d12 = torch.cat([d1, d2], dim=-1)
-            d3, d4 = self.f2(x3), self.f2(x4)
+            d3 = self.pool(self.features_sa(x3))
+            d4 = self.pool(self.features_sa(x4))
             d34 = torch.cat([d3, d4], dim=-1)
         else:
-            d1, d2 = self.f(x1), self.f(x2)
+            d1 = self.pool(self.features(x1))
+            d2 = self.pool(self.features(x2))
             d12 = torch.cat([d1, d2], dim=-1)
-            d3, d4 = self.f(x3), self.f(x4)
+            d3 = self.pool(self.features(x3))
+            d4 = self.pool(self.features(x4))
             d34 = torch.cat([d3, d4], dim=-1)
 
         # visualize.visualize_assets(self.backbone(x1).mean(axis=1, keepdim=True), self.backbone(x2).mean(axis=1, keepdim=True), mode='image')
@@ -141,15 +143,4 @@ class CrossViewOriPredModel(nn.Module):
         # output34 = (1 - horizontal_correlation(d3, d4) / d4.shape[-1]).float()
         # output12 = self.classifier(output12)
         # output34 = self.classifier(output34)
-
         return output12, output34
-
-
-class SimSiamPair(): #! deprecated
-    def __init__(self, backbone, pool, feat_dim):
-        # settings
-        self.nn_model_gr = SimSiam(backbone, pool, feat_dim)
-        self.nn_model_sa = SimSiam(backbone, pool, feat_dim)
-
-    def forward(self, x1, x2):
-        return {'loss': self.nn_model_gr(x1)['loss'] + self.nn_model_sa(x2)['loss']}

@@ -8,7 +8,6 @@ from torchvision import transforms as T
 
 imagenet_mean_std = [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]]
 
-
 def input_transform(resize=(112,616)):
     if resize[0] > 0 and resize[1] > 0:
         return T.Compose([
@@ -132,25 +131,3 @@ class SimSiamTransform():
         x1 = self.transform(x)
         x2 = self.transform(x)
         return x1, x2
-
-
-class SimSiamPairTransform(): #! deprecated
-    def __init__(self, image_size, mean_std=imagenet_mean_std):
-        image_size = (image_size, image_size) if isinstance(image_size, int) else image_size            
-        p_blur = 0.5
-        self.transform = T.Compose([
-            # T.RandomResizedCrop(image_size, scale=(0.2, 1.0)),
-            # T.RandomHorizontalFlip(),
-            T.Resize(image_size), # NOTE added
-            T.RandomApply([T.ColorJitter(0.4,0.4,0.4,0.1)], p=0.8),
-            T.RandomGrayscale(p=0.2),
-            T.RandomApply([T.GaussianBlur(kernel_size=[x//20*2+1 for x in image_size], sigma=(0.1, 2.0))], p=p_blur),
-            T.ToTensor(),
-            T.Normalize(*mean_std)
-        ])
-    def __call__(self, img_gr, img_sa):
-        img_gr1 = self.transform(img_gr)
-        img_gr2 = self.transform(img_gr)
-        img_sa1 = self.transform(img_sa)
-        img_sa2 = self.transform(img_sa)
-        return img_gr1, img_gr2, img_sa1, img_sa2

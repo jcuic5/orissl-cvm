@@ -1,34 +1,3 @@
-'''
-MIT License
-
-Copyright (c) 2021 Stephen Hausler, Sourav Garg, Ming Xu, Michael Milford and Tobias Fischer
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-Significant parts of our code are based on [Nanne's pytorch-netvlad repository]
-(https://github.com/Nanne/pytorch-NetVlad/), as well as some parts from the [Mapillary SLS repository]
-(https://github.com/mapillary/mapillary_sls)
-
-Modified by Jianfeng Cui
-'''
-
-
 import torch
 from tqdm.auto import trange, tqdm
 from torch.utils.data import DataLoader
@@ -39,6 +8,7 @@ from orissl_cvm.tools.visualize import visualize_assets
 from orissl_cvm.loss import *
 import torchvision.transforms.functional as F
 from torchvision.transforms import InterpolationMode
+
 
 def train_epoch(train_dataset, training_data_loader, model, 
                 optimizer, scheduler, criterion, device, 
@@ -61,17 +31,17 @@ def train_epoch(train_dataset, training_data_loader, model,
             bh_gr = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list_gr)
             fh_sa = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list_sa)
             bh_sa = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list_sa)
-            model.nn_model_gr.backbone[-1].register_forward_hook(fh_gr)
-            model.nn_model_gr.backbone[-1].register_full_backward_hook(bh_gr)
-            model.nn_model_sa.backbone[-1].register_forward_hook(fh_sa)
-            model.nn_model_sa.backbone[-1].register_full_backward_hook(bh_sa)
+            model.features_gr[-1].register_forward_hook(fh_gr)
+            model.features_gr[-1].register_full_backward_hook(bh_gr)
+            model.features_sa[-1].register_forward_hook(fh_sa)
+            model.features_sa[-1].register_full_backward_hook(bh_sa)
         else:
             fmp_list = []
             grad_list = []
             fh = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list)
             bh = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list)
-            model.backbone[-1].register_forward_hook(fh)
-            model.backbone[-1].register_full_backward_hook(bh)
+            model.features[-1].register_forward_hook(fh)
+            model.features[-1].register_full_backward_hook(bh)
 
     for iteration, batch in enumerate(local_progress):
         # prepare data

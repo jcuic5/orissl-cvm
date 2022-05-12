@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F 
 from torchvision.models import resnet50
-from .__init__ import get_backbone, get_pool, get_encoder
+from .__init__ import get_backbone, get_pool
 
 
 def D(p, z, version='simplified'): # negative cosine similarity
@@ -88,19 +88,22 @@ class prediction_MLP(nn.Module):
 
 
 class SimSiam(nn.Module):
-    def __init__(self, backbone, pool, proj_layers, feat_dim):
+    def __init__(self, backbone):
         super().__init__()
-        self.backbone = get_backbone(backbone)
-        self.pool = get_pool(pool, norm=False)
-        self.projector = projection_MLP(feat_dim)
-        self.projector.set_layers(proj_layers)
+        
+        self.features = backbone
+        self.projector = projection_MLP(backbone.output_dim)
+
+        self.encoder = nn.Sequential( # f encoder
+            self.features,
+            self.projector
+        )
         self.predictor = prediction_MLP()
     
-        self.f = lambda x : self.projector(self.pool(self.backbone(x)))
-        self.h = lambda x : self.predictor(x)
-
     def forward(self, x1, x2):
-        z1, z2 = self.f(x1), self.f(x2)
-        p1, p2 = self.h(z1), self.h(z2)
+
+        f, h = self.encoder, self.predictor
+        z1, z2 = f(x1), f(x2)
+        p1, p2 = h(z1), h(z2)
         L = D(p1, z2) / 2 + D(p2, z1) / 2
         return {'loss': L}

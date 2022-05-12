@@ -35,7 +35,7 @@ train:
   # load_path: 'work_dirs/May07-1215_simsiam_vgg16_max_shared_None_cvact_mini/checkpoints/model_best.pth.tar'
   # load_path: 'work_dirs/May10-1322_cvm_vgg16_max_noshared_cvact_mini/checkpoints/model_best.pth.tar'
   load_sep_branch: False
-  load_only_backbone_pool: False
+  load_only_backbone: False
   train_as_val: False
   only_val: False
   grad_cam: False
