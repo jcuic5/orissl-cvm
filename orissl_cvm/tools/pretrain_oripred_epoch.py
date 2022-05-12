@@ -71,8 +71,8 @@ def train_epoch(train_dataset, training_data_loader, model,
 
         batch_loss = loss.item()
         epoch_loss += batch_loss
-        correct_gr = ((output_gr - label1).abs() < 0.1).sum().item()
-        correct_sa = ((output_sa - label2).abs() < 0.1).sum().item()
+        correct_gr = ((output_gr - label1).abs() <= 0.03125).sum().item()
+        correct_sa = ((output_sa - label2).abs() <= 0.03125).sum().item()
 
         if n_batches <= 10 or iteration % (n_batches // 5) == 0:
             # tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}, Accuracy: {:.4f}, {:.4f}".format(

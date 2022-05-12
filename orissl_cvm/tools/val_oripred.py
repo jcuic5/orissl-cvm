@@ -32,8 +32,8 @@ def val(eval_loader, model, device, cfg, writer, epoch_num=0, write_tboard=False
             # forward
             output_gr, output_sa = model(img_gr1, img_gr2, img_sa1, img_sa2)
             output_gr, output_sa = output_gr.squeeze(-1), output_sa.squeeze(-1)
-            correct_gr += ((output_gr - label1).abs() < 0.1).sum().item()
-            correct_sa += ((output_sa - label2).abs() < 0.1).sum().item()
+            correct_gr += ((output_gr - label1).abs() <= 0.03125).sum().item()
+            correct_sa += ((output_sa - label2).abs() <= 0.03125).sum().item()
             total += B
 
     acc_gr = correct_gr / total

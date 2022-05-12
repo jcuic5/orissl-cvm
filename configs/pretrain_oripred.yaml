@@ -1,8 +1,8 @@
 dataset:
   name: cvact
   dataset_root_dir: 'data/CVACT_full'
-  dataset_version: 'tiny'
-  n_workers: 1
+  dataset_version: 'mini'
+  n_workers: 2
   train_loader_shuffle: False
 
 model:
@@ -15,18 +15,18 @@ model:
 
 train:
   seed: 42
-  batch_size: 2
+  batch_size: 8
   n_epochs: 300
   start_epoch: 0
   eval_every: 1
   patience: 0
   save_every_epoch: False
-  threads: '1'
-  gpu_ids: '0'
+  threads: '2'
+  gpu_ids: '7'
   no_cuda: False
   n_gpu: 1
-  # save_path: 'work_dirs'
-  save_path: 'work_dirs_for_debug'
+  save_path: 'work_dirs'
+  # save_path: 'work_dirs_for_debug'
   resume_path: ''
   # resume_path: 'work_dirs/Apr27_00-59-08_crossview_vgg16_safa_cvact/checkpoints/checkpoint.pth.tar'
   load_path: ''
@@ -34,11 +34,11 @@ train:
   # load_path: 'work_dirs/May04-0255_oripred_resnet18_max_shared_cvact_1k/checkpoints/checkpoint.pth.tar'
   load_sep_branch: False
   load_only_backbone: False
-  train_as_val: True
+  train_as_val: False
   only_val: False
   grad_cam: False
+  extra_identifier: ''
   
-
 hyperparams:
   optim: 'adam'
   weight_decay: 0.001
@@ -48,3 +48,6 @@ hyperparams:
   lr_gamma: 0.5
   # margin for hard triplet loss (deprecated)
   margin: 0.1
+
+# aug: slide_w = random.randint(0, 31) * 8
+# acc regression threshold: 0.03125
