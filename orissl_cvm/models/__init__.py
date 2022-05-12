@@ -91,7 +91,7 @@ def get_pool(name, norm=True):
         pool = [nn.AdaptiveMaxPool2d((1, 1)), nn.Flatten(start_dim=1, end_dim=-1)]
     elif name == 'avg':
         pool = [nn.AdaptiveAvgPool2d((1, 1)), nn.Flatten(start_dim=1, end_dim=-1)]
-    if name == 'safa':
+    elif name == 'safa':
         pool = [SPEPool(fmp_size=(7, 32), num_spe=1)]
     elif name == 'identity':
         pool = [nn.Identity()]

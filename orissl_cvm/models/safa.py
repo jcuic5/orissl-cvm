@@ -114,11 +114,15 @@ class CrossViewOriPredModel(nn.Module):
 
     def forward(self, x1, x2, x3, x4):
         if not self.shared:
-            d1 = self.pool(self.features_gr(x1))
-            d2 = self.pool(self.features_gr(x2))
+            fmp1 = self.features_gr(x1)
+            fmp2 = self.features_gr(x2)
+            d1 = self.pool(fmp1)
+            d2 = self.pool(fmp2)
             d12 = torch.cat([d1, d2], dim=-1)
-            d3 = self.pool(self.features_sa(x3))
-            d4 = self.pool(self.features_sa(x4))
+            fmp3 = self.features_sa(x3)
+            fmp4 = self.features_sa(x4)
+            d3 = self.pool(fmp3)
+            d4 = self.pool(fmp4)
             d34 = torch.cat([d3, d4], dim=-1)
         else:
             d1 = self.pool(self.features(x1))
@@ -128,8 +132,8 @@ class CrossViewOriPredModel(nn.Module):
             d4 = self.pool(self.features(x4))
             d34 = torch.cat([d3, d4], dim=-1)
 
-        # visualize.visualize_assets(self.backbone(x1).mean(axis=1, keepdim=True), self.backbone(x2).mean(axis=1, keepdim=True), mode='image')
-        # visualize.visualize_assets(self.backbone(x3).mean(axis=1, keepdim=True), self.backbone(x4).mean(axis=1, keepdim=True), mode='image')
+        # visualize.visualize_assets(fmp1.mean(axis=1, keepdim=True), fmp2.mean(axis=1, keepdim=True), mode='image')
+        # visualize.visualize_assets(fmp3.mean(axis=1, keepdim=True), fmp4.mean(axis=1, keepdim=True), mode='image')
         # visualize.visualize_assets(d1, d2, d3, d4, mode='descriptor')
         output12 = self.classifier(d12)
         output34 = self.classifier(d34)

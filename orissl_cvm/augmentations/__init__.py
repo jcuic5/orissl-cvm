@@ -37,8 +37,8 @@ def random_slide_pano(img, mode='cls', num_dirs=4):
         # slide_w = random.randint(0, W - 1)
         # slide_w = random.randint(0, 15) * 32 # num of angles * num of pixels per step
         # NOTE for debug
-        # slide_w = random.randint(0, 7) * 32
-        slide_w = random.randint(0, 31) * 8
+        slide_w = random.randint(0, 7) * 32
+        # slide_w = random.randint(0, 31) * 8
         # slide_w = random.randint(0, 1)
         # slide_w = slide_w * (W // 28 - 1) * 14
         # slide_w = 3 * 16
