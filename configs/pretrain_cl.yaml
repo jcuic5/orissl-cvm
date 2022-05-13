@@ -7,10 +7,9 @@ dataset:
 model: 
   name: simsiam
   backbone: vgg16
-  pool: max
-  proj_layers: 2
-  shared: True
-  category: null
+  pool: flatten
+  shared: False
+  category: 'satellite'
   img_size_w: 512
   img_size_h: 112
 
@@ -26,7 +25,7 @@ train:
   patience: 10
   save_every_epoch: False
   threads: '3'
-  gpu_ids: '2'
+  gpu_ids: '7'
   no_cuda: False
   n_gpu: 1
   save_path: 'work_dirs'
@@ -36,6 +35,7 @@ train:
   load_path: ''
   load_sep_branch: False
   train_as_val: False
+  extra_identifier: ''
 
 hyperparams:
   optim: 'sgd'
@@ -46,4 +46,4 @@ hyperparams:
   base_lr: 0.03
   final_lr: 0
 
-# note: augmentations using my setting
+# note: augmentation v1

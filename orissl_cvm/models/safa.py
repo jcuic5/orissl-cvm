@@ -8,6 +8,7 @@ from orissl_cvm.tools import visualize
 from .__init__ import get_backbone, get_pool, _initialize_weights
 from .simsiam import SimSiam
 from .vit import ViT
+from orissl_cvm.tools import show_cam_on_image
 
 
 def horizontal_correlation(fmp1, fmp2):
@@ -89,6 +90,12 @@ class CrossViewMatchingModel(nn.Module):
             desc_gr = self.pool(fmp_gr)
             fmp_sa = self.features(x2)
             desc_sa = self.pool(fmp_sa)
+        # fmap_gr = fmp_gr.cpu().data.numpy().squeeze()
+        # fmap_sa = fmp_sa.cpu().data.numpy().squeeze()
+        # visualize.visualize_assets(x1, torch.tensor(fmap_gr).mean(1), x2, torch.tensor(fmap_sa).mean(1))
+        # visualize.visualize_assets(show_cam_on_image(x1, torch.tensor(fmap_gr).mean(1)), show_cam_on_image(x2, torch.tensor(fmap_sa).mean(1)))
+        # visualize.visualize_assets(desc_gr, desc_sa, mode='descriptor')
+
         return desc_gr, desc_sa
 
 
@@ -132,9 +139,9 @@ class CrossViewOriPredModel(nn.Module):
             d4 = self.pool(self.features(x4))
             d34 = torch.cat([d3, d4], dim=-1)
 
-        # visualize.visualize_assets(fmp1.mean(axis=1, keepdim=True), fmp2.mean(axis=1, keepdim=True), mode='image')
-        # visualize.visualize_assets(fmp3.mean(axis=1, keepdim=True), fmp4.mean(axis=1, keepdim=True), mode='image')
-        # visualize.visualize_assets(d1, d2, d3, d4, mode='descriptor')
+        visualize.visualize_assets(fmp1.mean(axis=1, keepdim=True), fmp2.mean(axis=1, keepdim=True), mode='image')
+        visualize.visualize_assets(fmp3.mean(axis=1, keepdim=True), fmp4.mean(axis=1, keepdim=True), mode='image')
+        visualize.visualize_assets(d1, d2, d3, d4, mode='descriptor')
         output12 = self.classifier(d12)
         output34 = self.classifier(d34)
         # NOTE 

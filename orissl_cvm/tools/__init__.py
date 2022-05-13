@@ -176,8 +176,8 @@ def get_model_with_ckpt(cfg, logger):
                 # NOTE For debug, check if params are loaded
                 # p1 = next(iter(model.model_gr.backbone.parameters()))
                 # p2 = model_gr['state_dict']['backbone.0.weight']
-                model.features_gr.load_state_dict({k : v for k, v in ckpt_gr['state_dict'].items() if k.startswith('features')}, strict=True)
-                model.features_sa.load_state_dict({k : v for k, v in ckpt_sa['state_dict'].items() if k.startswith('features')}, strict=True)
+                model.features_gr.load_state_dict({k[9:] : v for k, v in ckpt_gr['state_dict'].items() if k.startswith('features.')}, strict=True)
+                model.features_sa.load_state_dict({k[9:] : v for k, v in ckpt_sa['state_dict'].items() if k.startswith('features.')}, strict=True)
                 logger.info("===> loaded branch weights separately '{}'".format(cfg.train.load_path))
             else:
                 raise FileNotFoundError("===> no checkpoint found at '{}'".format(cfg.train.load_path))
@@ -187,7 +187,7 @@ def get_model_with_ckpt(cfg, logger):
                 ckpt = torch.load(cfg.train.load_path, map_location=lambda storage, loc: storage)
                 model = get_model(cfg.model)
                 if cfg.train.load_only_backbone:
-                    model.load_state_dict({k : v for k, v in ckpt['state_dict'].items() if k.startswith('features')}, strict=True)
+                    model.load_state_dict({k[9:] : v for k, v in ckpt['state_dict'].items() if k.startswith('features.')}, strict=True)
                 else:
                     model.load_state_dict(ckpt['state_dict'], strict=True)
                 logger.info("===> loaded model weights '{}'".format(cfg.train.load_path))
@@ -241,6 +241,7 @@ def show_cam_on_image(img, heatmap):
     """Apply heatmap on image
     """
     B, C, H, W = img.shape
+    im = torch.tensor(img)
     color_map = mpl_color_map.get_cmap('viridis')
     # heatmap = resize(heatmap, (H, W), InterpolationMode.NEAREST).unsqueeze(dim=1).to(img.device)
     heatmap = resize(heatmap, (H, W), InterpolationMode.BILINEAR).unsqueeze(dim=1)
@@ -251,8 +252,8 @@ def show_cam_on_image(img, heatmap):
         # cmap = color_map(hmap)
         # cmap = torch.tensor(cmap).to(img.device).permute(2, 0, 1)
         # img[i] += cmap[:3] * cmap[3]
-        img[i] += torch.tensor(hmap).to(img.device).unsqueeze(dim=0) * 15
-    return img
+        im[i] += torch.tensor(hmap).to(im.device).unsqueeze(dim=0) * 15
+    return im
 
 
 def apply_colormap_on_image(org_im, activation, colormap_name):

@@ -35,9 +35,10 @@ def _initialize_weights(m):
 
 def get_backbone(name):
     if name == 'resnet18':
-        # backbone = resnet18(norm_layer=lambda x : nn.BatchNorm2d(x, track_running_stats=False))
-        # backbone = resnet18(norm_layer=lambda x : nn.Identity())
-        backbone = resnet18(norm_layer=lambda x : LayerNorm())
+        backbone = resnet18(pretrained=True)
+        # backbone = resnet18(pretrained=True, norm_layer=lambda x : nn.BatchNorm2d(x, track_running_stats=False))
+        # backbone = resnet18(pretrained=True, norm_layer=lambda x : nn.Identity())
+        # backbone = resnet18(pretrained=True, norm_layer=lambda x : LayerNorm())
         layers = list(backbone.children())[:-2]
         # NOTE optionally if we have dim less than 224, don't half the size at conv_1
         # layers[0].stride = 1
@@ -49,6 +50,7 @@ def get_backbone(name):
         backbone = vgg16(pretrained=True)
         # drop the last two layers: ReLU and MaxPool2d
         layers = list(backbone.features.children())[:-1]
+        layers[-1] = nn.ReLU(inplace=False)
         # layers = [x for x in layers if not isinstance(x, nn.ReLU)]
 
         # optionally freeze part of the backbone
@@ -95,6 +97,8 @@ def get_pool(name, norm=True):
         pool = [SPEPool(fmp_size=(7, 32), num_spe=1)]
     elif name == 'identity':
         pool = [nn.Identity()]
+    elif name == 'flatten':
+        pool = [nn.AdaptiveAvgPool2d((7, 7)), nn.Flatten(start_dim=1, end_dim=-1)]
     elif name == 'fc':
         pool = [nn.AdaptiveAvgPool2d((7, 7)),
                 nn.Flatten(start_dim=1, end_dim=-1),
@@ -102,6 +106,9 @@ def get_pool(name, norm=True):
                 nn.ReLU(),
                 nn.Dropout(),
                 nn.Linear(4096, 512)]
+        # pool = [nn.AdaptiveAvgPool2d((7, 7)),
+        #         nn.Flatten(start_dim=1, end_dim=-1),
+        #         nn.Linear(25088, 512)]
     else:
         raise NotImplementedError
     if norm: 
@@ -113,11 +120,11 @@ def get_model(model_cfg):
     from .simsiam import SimSiam
     from .safa import CrossViewMatchingModel, CrossViewOriPredModel
     if model_cfg.name == 'simsiam':
-        model = SimSiam(model_cfg.backbone)
+        model = SimSiam(model_cfg.backbone, model_cfg.pool)
     elif model_cfg.name == 'cvm':
-        model = CrossViewMatchingModel(model_cfg.backbone, model_cfg.pool, shared=model_cfg.shared)
+        model = CrossViewMatchingModel(model_cfg.backbone, model_cfg.pool, model_cfg.shared)
     elif model_cfg.name == 'oripred':
-        model = CrossViewOriPredModel(model_cfg.backbone, model_cfg.pool, shared=model_cfg.shared)
+        model = CrossViewOriPredModel(model_cfg.backbone, model_cfg.pool, model_cfg.shared)
     else:
         raise NotImplementedError
 

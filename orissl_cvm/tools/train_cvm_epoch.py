@@ -27,14 +27,17 @@ def train_epoch(train_dataset, training_data_loader, model,
         if not cfg.model.shared:
             fmp_list_gr, fmp_list_sa = [], []
             grad_list_gr, grad_list_sa = [], []
+            d_list = []
             fh_gr = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list_gr)
             bh_gr = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list_gr)
             fh_sa = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list_sa)
             bh_sa = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list_sa)
+            fh_d = lambda module, input, output : forward_hook(module, input, output, fmp_list=d_list)
             model.features_gr[-1].register_forward_hook(fh_gr)
             model.features_gr[-1].register_full_backward_hook(bh_gr)
             model.features_sa[-1].register_forward_hook(fh_sa)
             model.features_sa[-1].register_full_backward_hook(bh_sa)
+            model.pool[-2].register_forward_hook(fh_d)
         else:
             fmp_list = []
             grad_list = []
@@ -78,8 +81,9 @@ def train_epoch(train_dataset, training_data_loader, model,
         # loss += uniform_loss(descQ_gr) + uniform_loss(descQ_sa)
         loss /= n_triplets # normalise by actual number of negatives
         if cfg.train.grad_cam:
-            act = (descQ_gr * descQ_sa).sum()
-            act.backward()
+            d_gr, d_sa = d_list[2*iteration], d_list[2*iteration+1]
+            product = (d_gr * d_sa).sum()
+            product.backward()
         else:
             loss.backward()
 
@@ -104,10 +108,11 @@ def train_epoch(train_dataset, training_data_loader, model,
                 grad_sa = grad_list[2*iteration+1].cpu().data.numpy().squeeze()
             cam_gr = gen_cam(fmap_gr, grad_gr)
             cam_sa = gen_cam(fmap_sa, grad_sa)
-            # visualize_assets(query_gr, torch.tensor(fmap_gr).mean(1), query_sa, torch.tensor(fmap_sa).mean(1))
-            # visualize_assets(show_cam_on_image(query_gr, torch.tensor(fmap_gr).mean(1)), show_cam_on_image(query_sa, torch.tensor(fmap_sa).mean(1)))
-            # visualize_assets(query_gr, torch.tensor(cam_gr), query_sa, torch.tensor(cam_sa))
-            visualize_assets(show_cam_on_image(query_gr, torch.tensor(cam_gr)), show_cam_on_image(query_sa, torch.tensor(cam_sa)))
+            # visualize_assets(query_gr, query_sa)
+            visualize_assets(query_gr, torch.tensor(fmap_gr).mean(1), query_sa, torch.tensor(fmap_sa).mean(1))
+            visualize_assets(show_cam_on_image(query_gr, torch.tensor(fmap_gr).mean(1)), show_cam_on_image(query_sa, torch.tensor(fmap_sa).mean(1)))
+            visualize_assets(query_gr, torch.tensor(cam_gr), query_sa, torch.tensor(cam_sa))
+            visualize_assets(show_cam_on_image(query_gr, torch.tensor(cam_gr)), show_cam_on_image(query_sa, torch.tensor(cam_sa)))     
             visualize_assets(descQ_gr, descQ_sa, mode='descriptor')
 
         optimizer.step()

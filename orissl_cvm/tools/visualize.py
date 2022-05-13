@@ -20,7 +20,7 @@ def visualize_assets(*assets, mode='image', max_nrows=6, dcn=True, caption='Batc
 	B = assets[0].shape[0]
 	if mode == 'descriptor': 
 		C = assets[0].shape[1]
-		vis_ratio = 8
+		vis_ratio = 10
 		assets = [F.adaptive_avg_pool1d(x.unsqueeze(1), int(C/vis_ratio)).squeeze(1) for x in assets]
 	if mode == 'score':
 		C = assets.shape[1]
@@ -49,7 +49,7 @@ def visualize_assets(*assets, mode='image', max_nrows=6, dcn=True, caption='Batc
 					axes[i,j].imshow(denormalize(im))
 			elif mode == 'descriptor':
 				axes[i,j].imshow(assets[j][i:i+1], cmap='viridis', interpolation='none')
-				axes[i,j].set_aspect(5*25/vis_ratio)
+				axes[i,j].set_aspect(10)
 				axes[i,j].set_title(f"Sample {i} ==> ground descriptor", fontsize=8)
 				# axes[i,j].axis('off')
 				axes[i,j].get_yaxis().set_visible(False)

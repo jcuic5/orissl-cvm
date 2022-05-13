@@ -46,7 +46,8 @@ if __name__ == "__main__":
     if 'shared' in cfg.model:
         cfg.identifier += '_shared' if cfg.model.shared else '_noshared'
     cfg.identifier += f'_{cfg.dataset.name}_{cfg.dataset.dataset_version}'
-    
+    cfg.identifier += f'_{cfg.train.extra_identifier}'
+
     logdir = join(cfg.train.save_path, datetime.now().strftime('%b%d-%H%M') + '_' + cfg.identifier)
     makedirs(logdir)
     shutil.copyfile(cfg_file, join(logdir, cfg_file.split('/')[-1]))

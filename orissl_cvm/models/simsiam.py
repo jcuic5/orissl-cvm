@@ -88,14 +88,16 @@ class prediction_MLP(nn.Module):
 
 
 class SimSiam(nn.Module):
-    def __init__(self, backbone):
+    def __init__(self, backbone, pool):
         super().__init__()
         
-        self.features = backbone
-        self.projector = projection_MLP(backbone.output_dim)
+        self.features = get_backbone(backbone)
+        self.pool = get_pool(pool, norm=False)
+        self.projector = projection_MLP(7*7*self.features.output_dim)
 
         self.encoder = nn.Sequential( # f encoder
             self.features,
+            self.pool,
             self.projector
         )
         self.predictor = prediction_MLP()
