@@ -241,7 +241,7 @@ def show_cam_on_image(img, heatmap):
     """Apply heatmap on image
     """
     B, C, H, W = img.shape
-    im = torch.tensor(img)
+    im = img.clone().detach()
     color_map = mpl_color_map.get_cmap('viridis')
     # heatmap = resize(heatmap, (H, W), InterpolationMode.NEAREST).unsqueeze(dim=1).to(img.device)
     heatmap = resize(heatmap, (H, W), InterpolationMode.BILINEAR).unsqueeze(dim=1)
