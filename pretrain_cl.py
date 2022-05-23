@@ -24,11 +24,12 @@ from orissl_cvm import PACKAGE_ROOT_DIR
 from orissl_cvm.augmentations import SimSiamTransform
 from orissl_cvm.models import get_backbone
 from orissl_cvm.tools.val_cvm import val
-from orissl_cvm.tools import save_checkpoint, create_logger, log_config_to_file, visualize
+from orissl_cvm.tools import save_checkpoint, create_logger, log_config_to_file, visualize, register_hook, show_cam_on_image
 from orissl_cvm.augmentations import input_transform
 from orissl_cvm.datasets.cvact_dataset import CVACTDataset, ImagePairsFromList, ImagesFromList
 from orissl_cvm.models import get_model
 from orissl_cvm.optimizers import get_optimizer, LR_Scheduler
+from orissl_cvm.tools.visualize import visualize_assets
 
 from tqdm.auto import trange, tqdm
 
@@ -49,7 +50,7 @@ if __name__ == "__main__":
     cfg.identifier = f'{cfg.model.name}_{cfg.model.backbone}_{cfg.model.pool}'
     if 'shared' in cfg.model:
         cfg.identifier += '_shared' if cfg.model.shared else '_noshared'
-    if 'category' in cfg.model:
+    if 'category' in cfg.model and cfg.model.category != '':
         cfg.identifier += f'_{cfg.model.category}'
     cfg.identifier += f'_{cfg.dataset.name}_{cfg.dataset.dataset_version}'
 
@@ -192,32 +193,41 @@ if __name__ == "__main__":
         n_batches = (len(train_dataset) + cfg.train.batch_size - 1) // cfg.train.batch_size
         model.train()
         local_progress = tqdm(train_dataloader, position=1, leave=False, desc='Train Iter'.rjust(15))
-
+        if cfg.train.grad_cam: 
+            if cfg.model.shared:
+                fmp_list_gr, fmp_list_sa, grad_list_gr, grad_list_sa, d_list = register_hook(model)
+            else:
+                fmp_list, grad_list, d_list = register_hook(model, mode='single')        
         for iteration, batch in enumerate(local_progress):
             if batch is None:
                 continue
             if cfg.model.shared:
                 (im1, im2), (im3, im4), labels = batch # TODO `labels` makes no sense!
                 model.zero_grad()
-                data_dict1 = model.forward(im1.to(device, non_blocking=True), im2.to(device, non_blocking=True))
-                data_dict3 = model.forward(im3.to(device, non_blocking=True), im4.to(device, non_blocking=True))
-                loss = data_dict1['loss'].mean() + data_dict3['loss'].mean()
+                data_dict = model.forward(im1.to(device, non_blocking=True), im2.to(device, non_blocking=True),
+                                          im3.to(device, non_blocking=True), im4.to(device, non_blocking=True))
+                loss = data_dict['loss'].mean()
             else:
                 (im1, im2), labels = batch # TODO `labels` makes no sense!
                 model.zero_grad()
                 data_dict = model.forward(im1.to(device, non_blocking=True), im2.to(device, non_blocking=True))
                 loss = data_dict['loss'].mean() # ddp
-
-            # NOTE for debug
-            # visualize.visualize_assets(im1, im2, im3, im4)
             loss.backward()
             optimizer.step()
             scheduler.step()
-            # data_dict.update({'lr': scheduler.get_lr()})
+
+            # NOTE check grad-cam
+            if cfg.train.grad_cam:
+                if cfg.model.shared:
+                    raise NotImplementedError
+                else:
+                    fmap1 = fmp_list[2*iteration].cpu().data.numpy().squeeze()
+                    fmap2 = fmp_list[2*iteration+1].cpu().data.numpy().squeeze()
+                    visualize_assets(im1, torch.tensor(fmap1).mean(1), im2, torch.tensor(fmap2).mean(1))
+                    visualize_assets(show_cam_on_image(im1, torch.tensor(fmap1).mean(1)), show_cam_on_image(im2, torch.tensor(fmap2).mean(1)))
 
             batch_loss = loss.item()
             epoch_loss += batch_loss
-
             if iteration % (n_batches // 5) == 0 or n_batches <= 10:
                 tqdm.write("==> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch, iteration,
                                                                         n_batches, batch_loss))
@@ -227,14 +237,12 @@ if __name__ == "__main__":
         avg_loss = epoch_loss / n_batches
         tqdm.write("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch, avg_loss))
         writer.add_scalar('Train/AvgLoss', avg_loss, epoch)
-
         is_best = avg_loss < best_score
         if is_best:
             not_improved = 0
             best_score = avg_loss
         else:
             not_improved += 1
-
         if (epoch % cfg.train.eval_every) == 0:
             save_checkpoint({
                 'epoch': epoch,
@@ -244,8 +252,6 @@ if __name__ == "__main__":
                 'optimizer': optimizer.state_dict(),
                 'parallel': isParallel,
             }, cfg, is_best)
-
     writer.close()
-    torch.cuda.empty_cache()  # garbage clean GPU memory, a bug can occur when Pytorch doesn't automatically clear the
-    # memory after runs
+    torch.cuda.empty_cache()
     logger.info('Done')

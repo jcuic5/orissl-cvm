@@ -99,6 +99,39 @@ class CrossViewMatchingModel(nn.Module):
         return desc_gr, desc_sa
 
 
+class CrossViewMatchingModelv2(nn.Module):
+    def __init__(self, backbone, pool, shared=False):
+        super(CrossViewMatchingModelv2, self).__init__()
+        self.shared = shared
+        if not shared:
+            self.features_gr = get_backbone(backbone)
+            self.features_sa = get_backbone(backbone)
+            self.pool_gr = get_pool(pool, norm=True)
+            self.pool_sa = get_pool(pool, norm=True)
+        else:
+            self.features = get_backbone(backbone)
+            self.pool = get_pool(pool, norm=True)
+
+    def forward(self, x1, x2):
+        if not self.shared:
+            fmp_gr = self.features_gr(x1)
+            desc_gr = self.pool_gr(fmp_gr)
+            fmp_sa = self.features_sa(x2)
+            desc_sa = self.pool_sa(fmp_sa)
+        else:
+            fmp_gr = self.features(x1)
+            desc_gr = self.pool(fmp_gr)
+            fmp_sa = self.features(x2)
+            desc_sa = self.pool(fmp_sa)
+        # fmap_gr = fmp_gr.cpu().data.numpy().squeeze()
+        # fmap_sa = fmp_sa.cpu().data.numpy().squeeze()
+        # visualize.visualize_assets(x1, torch.tensor(fmap_gr).mean(1), x2, torch.tensor(fmap_sa).mean(1))
+        # visualize.visualize_assets(show_cam_on_image(x1, torch.tensor(fmap_gr).mean(1)), show_cam_on_image(x2, torch.tensor(fmap_sa).mean(1)))
+        # visualize.visualize_assets(desc_gr, desc_sa, mode='descriptor')
+
+        return desc_gr, desc_sa
+
+
 class CrossViewOriPredModel(nn.Module):
     def __init__(self, backbone, pool, shared=False):
         super(CrossViewOriPredModel, self).__init__()

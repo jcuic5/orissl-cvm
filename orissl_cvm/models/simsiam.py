@@ -109,3 +109,56 @@ class SimSiam(nn.Module):
         p1, p2 = h(z1), h(z2)
         L = D(p1, z2) / 2 + D(p2, z1) / 2
         return {'loss': L}
+
+
+class SimSiamv2(nn.Module):
+    def __init__(self, backbone, pool):
+        super().__init__()
+        '''Not use projector. Simply use the pool consistent with downstream CVM'''
+        self.features = get_backbone(backbone)
+        self.pool = get_pool(pool, norm=False)
+        self.encoder = nn.Sequential( # f encoder
+            self.features,
+            self.pool
+        )
+        self.predictor = prediction_MLP(in_dim=512)
+    def forward(self, x1, x2):
+
+        f, h = self.encoder, self.predictor
+        z1, z2 = f(x1), f(x2)
+        p1, p2 = h(z1), h(z2)
+        L = D(p1, z2) / 2 + D(p2, z1) / 2
+        return {'loss': L}
+
+
+class SimSiamv3(nn.Module):
+    def __init__(self, backbone, pool):
+        super().__init__()
+        '''Joint training two views. Separate backbone, shared projector and predictor'''
+        
+        self.features_gr, self.features_sa = get_backbone(backbone), get_backbone(backbone)
+        self.pool_gr, self.pool_sa = get_pool(pool, norm=False), get_pool(pool, norm=False)
+        self.projector = projection_MLP(7*7*self.features_gr.output_dim)
+
+        self.encoder_gr = nn.Sequential( # f encoder
+            self.features_gr,
+            self.pool_gr,
+            self.projector
+        )
+        self.encoder_sa = nn.Sequential( # f encoder
+            self.features_sa,
+            self.pool_sa,
+            self.projector
+        )
+        self.predictor = prediction_MLP()
+    
+    def forward(self, x1, x2, x3, x4):
+
+        f1, f2, h = self.encoder_gr, self.encoder_sa, self.predictor
+        z1, z2 = f1(x1), f1(x2)
+        p1, p2 = h(z1), h(z2)
+        L = D(p1, z2) / 2 + D(p2, z1) / 2
+        z3, z4 = f2(x3), f2(x4)
+        p3, p4 = h(z3), h(z4)
+        L += D(p3, z4) / 2 + D(p4, z3) / 2
+        return {'loss': L}

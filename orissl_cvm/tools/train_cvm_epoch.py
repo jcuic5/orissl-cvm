@@ -1,9 +1,10 @@
+from operator import mod
 import torch
 from tqdm.auto import trange, tqdm
 from torch.utils.data import DataLoader
 from orissl_cvm.tools import humanbytes
 from orissl_cvm.datasets.cvact_dataset import CVACTDataset
-from orissl_cvm.tools import forward_hook, backward_hook, gen_cam, show_cam_on_image
+from orissl_cvm.tools import register_hook, gen_cam, show_cam_on_image
 from orissl_cvm.tools.visualize import visualize_assets
 from orissl_cvm.loss import *
 import torchvision.transforms.functional as F
@@ -15,44 +16,20 @@ def train_epoch(train_dataset, training_data_loader, model,
                 epoch_num, cfg, writer):
     epoch_loss = 0
     n_batches = (len(train_dataset.qIdx) + cfg.train.batch_size - 1) // cfg.train.batch_size
-
     if cfg.train.check_align_and_uniform:
         epoch_loss_a = 0
         epoch_loss_u = 0
-
     model.train()
     local_progress = tqdm(training_data_loader, position=1, leave=False, desc='Train Iter'.rjust(15))
-
-    if cfg.train.grad_cam:
-        if not cfg.model.shared:
-            fmp_list_gr, fmp_list_sa = [], []
-            grad_list_gr, grad_list_sa = [], []
-            d_list = []
-            fh_gr = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list_gr)
-            bh_gr = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list_gr)
-            fh_sa = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list_sa)
-            bh_sa = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list_sa)
-            fh_d = lambda module, input, output : forward_hook(module, input, output, fmp_list=d_list)
-            model.features_gr[-1].register_forward_hook(fh_gr)
-            model.features_gr[-1].register_full_backward_hook(bh_gr)
-            model.features_sa[-1].register_forward_hook(fh_sa)
-            model.features_sa[-1].register_full_backward_hook(bh_sa)
-            model.pool[-2].register_forward_hook(fh_d)
-        else:
-            fmp_list = []
-            grad_list = []
-            fh = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list)
-            bh = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list)
-            model.features[-1].register_forward_hook(fh)
-            model.features[-1].register_full_backward_hook(bh)
+    if cfg.train.grad_cam: 
+        fmp_list_gr, fmp_list_sa, grad_list_gr, grad_list_sa, d_list = register_hook(model)
 
     for iteration, batch in enumerate(local_progress):
         # prepare data
         if batch is None:
             tqdm.write('==> Current batch is None')
             continue
-        input_data, meta = batch
-        query_gr, query_sa = input_data
+        (query_gr, query_sa), meta = batch
         indices, keys_gr, keys_sa = meta['indices'], meta['keys_gr'], meta['keys_sa']
         B, C, H, W = query_gr.shape
         qpn_mat = torch.from_numpy(train_dataset.qpn_matrix[indices, :][:, indices]).to(device)
@@ -61,16 +38,9 @@ def train_epoch(train_dataset, training_data_loader, model,
         if n_triplets == 0:
             del query_gr, query_sa
             continue
-        
         # forward
         query_gr, query_sa = query_gr.to(device), query_sa.to(device)
-        # NOTE for debug
-        # visualize_assets(query_gr, query_sa)
         descQ_gr, descQ_sa = model(query_gr, query_sa)
-        # NOTE visualize the descriptor for debug
-        # if i % 50 == 0:
-            # visualize_desc(descQ_gr, descQ_sa)
-
         # calculate loss, back propagate, update weights
         optimizer.zero_grad()
         loss = 0
@@ -86,26 +56,21 @@ def train_epoch(train_dataset, training_data_loader, model,
             product.backward()
         else:
             loss.backward()
-
+        optimizer.step()
+        if scheduler is not None:
+            scheduler.step()
         # NOTE check alignment & uniformity properties of our positives
         if cfg.train.check_align_and_uniform:
             loss_a = align_loss(descQ_gr, descQ_sa)
             loss_u = uniform_loss(descQ_gr) + uniform_loss(descQ_sa)
             loss_a /= n_triplets
             loss_u /= n_triplets
-
         # NOTE check grad-cam
         if cfg.train.grad_cam:
-            if not cfg.model.shared:
-                fmap_gr = fmp_list_gr[iteration].cpu().data.numpy().squeeze()
-                grad_gr = grad_list_gr[iteration].cpu().data.numpy().squeeze()
-                fmap_sa = fmp_list_sa[iteration].cpu().data.numpy().squeeze()
-                grad_sa = grad_list_sa[iteration].cpu().data.numpy().squeeze()
-            else:
-                fmap_gr = fmp_list[2*iteration].cpu().data.numpy().squeeze()
-                grad_gr = grad_list[2*iteration].cpu().data.numpy().squeeze()
-                fmap_sa = fmp_list[2*iteration+1].cpu().data.numpy().squeeze()
-                grad_sa = grad_list[2*iteration+1].cpu().data.numpy().squeeze()
+            fmap_gr = fmp_list_gr[iteration].cpu().data.numpy().squeeze()
+            grad_gr = grad_list_gr[iteration].cpu().data.numpy().squeeze()
+            fmap_sa = fmp_list_sa[iteration].cpu().data.numpy().squeeze()
+            grad_sa = grad_list_sa[iteration].cpu().data.numpy().squeeze()
             cam_gr = gen_cam(fmap_gr, grad_gr)
             cam_sa = gen_cam(fmap_sa, grad_sa)
             # visualize_assets(query_gr, query_sa)
@@ -114,10 +79,6 @@ def train_epoch(train_dataset, training_data_loader, model,
             visualize_assets(query_gr, torch.tensor(cam_gr), query_sa, torch.tensor(cam_sa))
             visualize_assets(show_cam_on_image(query_gr, torch.tensor(cam_gr)), show_cam_on_image(query_sa, torch.tensor(cam_sa)))     
             visualize_assets(descQ_gr, descQ_sa, mode='descriptor')
-
-        optimizer.step()
-        if scheduler is not None:
-            scheduler.step()
         del query_gr, query_sa, descQ_gr, descQ_sa
 
         batch_loss = loss.item()
@@ -146,6 +107,3 @@ def train_epoch(train_dataset, training_data_loader, model,
         writer.add_scalar('Train/AvgLoss', avg_loss, epoch_num)
         writer.add_scalar('Train/AvgLoss_a', epoch_loss_a / n_batches, epoch_num)
         writer.add_scalar('Train/AvgLoss_u', epoch_loss_u / n_batches, epoch_num)
-
-    # tqdm.write('Allocated: ' + humanbytes(torch.cuda.memory_allocated()))
-    # tqdm.write('Cached:    ' + humanbytes(torch.cuda.memory_reserved()))

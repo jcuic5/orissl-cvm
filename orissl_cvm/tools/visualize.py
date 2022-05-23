@@ -9,6 +9,11 @@ from datetime import datetime
 from orissl_cvm import PACKAGE_ROOT_DIR
 from os.path import join
 import sys
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+from orissl_cvm.loss import uniform_loss
+from orissl_cvm.tools.vonmiseskde import VonMisesKDE
+
 
 def denormalize(im):
 	im = (im - np.min(im)) / (np.max(im) - np.min(im))
@@ -158,3 +163,40 @@ def visualize_dataloader_interact(training_loader):
 	button.on_click(on_button_clicked)
 	# displaying button and its output together
 	widgets.VBox([button,out])
+
+
+def visualize_featdist(qFeat_gr, qFeat_sa, caption):
+	'''	Visualize desciptor dsitribution using t-SNE. Polar coords & vMF KDE is applied'''
+	fig, axes = plt.subplots(nrows=1, ncols=3)
+	fig.suptitle(caption, fontsize=8)
+	fig.tight_layout()
+	
+	n_gr, n_sa = qFeat_gr.shape[0], qFeat_sa.shape[0]
+	feat = np.concatenate([qFeat_gr, qFeat_sa], axis=0)
+	X_embedded = TSNE(n_components=2, learning_rate='auto', init='random').fit_transform(feat)
+	axes[0].scatter(X_embedded[:n_gr, 0], X_embedded[:n_gr, 1], c='r', alpha=0.4)
+	axes[0].scatter(X_embedded[n_gr:, 0], X_embedded[n_gr:, 1], c='b', alpha=0.4)
+	# axes[0].set_xlim(-50, 50)
+	# axes[0].set_ylim(-50, 50)
+	axes[0].set_title('2-d descriptors after t-SNE', fontsize=8)
+
+	X_embedded = X_embedded / np.linalg.norm(X_embedded, ord=2, axis=1)[:, np.newaxis]
+	X_polar = np.arctan2(X_embedded[:, 1], X_embedded[:, 0])
+	axes[1].scatter(np.cos(X_polar[:n_gr]), np.sin(X_polar[:n_gr]), c='r', marker='o', alpha=0.05)
+	axes[1].scatter(np.cos(X_polar[n_gr:]), np.sin(X_polar[n_gr:]), c='b', marker='o', alpha=0.05)
+	axes[1].set_xlim(-1.1, 1.1)
+	axes[1].set_ylim(-1.1, 1.1)
+	axes[1].set_title('2-d descriptors after t-SNE in polar coordinates', fontsize=8)
+	
+	test_x = np.linspace(-np.pi, np.pi, 100)
+	kde = VonMisesKDE(X_polar, kappa=25)
+	axes[2].plot(test_x, kde.evaluate(test_x), zorder=20, c='g')
+	kde = VonMisesKDE(X_polar[:n_gr], kappa=25)
+	axes[2].plot(test_x, kde.evaluate(test_x), zorder=20, c='r', alpha=0.5)
+	kde = VonMisesKDE(X_polar[n_gr:], kappa=25)
+	axes[2].plot(test_x, kde.evaluate(test_x), zorder=20, c='b', alpha=0.5)
+	axes[2].set_xlim(-np.pi, np.pi)
+	axes[2].set_ylim(0, 1)
+	axes[2].set_title('von Mises-Fisher (vMF) kernel density estimation (KDE) on angles', fontsize=8)
+
+	plt.show()

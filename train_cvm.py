@@ -3,6 +3,7 @@ import argparse
 import yaml
 from easydict import EasyDict as edict  
 import os
+import sys
 import random
 from os.path import join
 from os import makedirs
@@ -46,7 +47,7 @@ if __name__ == "__main__":
     if 'shared' in cfg.model:
         cfg.identifier += '_shared' if cfg.model.shared else '_noshared'
     cfg.identifier += f'_{cfg.dataset.name}_{cfg.dataset.dataset_version}'
-    cfg.identifier += f'_{cfg.train.extra_identifier}'
+    if cfg.train.extra_identifier != '': cfg.identifier += f'_{cfg.train.extra_identifier}'
 
     logdir = join(cfg.train.save_path, datetime.now().strftime('%b%d-%H%M') + '_' + cfg.identifier)
     makedirs(logdir)
@@ -177,8 +178,12 @@ if __name__ == "__main__":
     # If only want to validate
     #
     if cfg.train.only_val:
-        val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device, writer, epoch_num=0,
+        val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device, cfg, writer, epoch_num=0,
                         write_tboard=False, pbar_position=0)
+        writer.close()
+        torch.cuda.empty_cache()
+        logger.info('Done')
+        sys.exit()
     #
     # Training
     #
@@ -187,7 +192,7 @@ if __name__ == "__main__":
         train_epoch(train_dataset, train_dataloader, model, optimizer, scheduler, criterion, device, epoch, cfg, writer)
         
         if (epoch % cfg.train.eval_every) == 0:
-            recalls = val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device, writer, epoch,
+            recalls = val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device, cfg, writer, epoch,
                           write_tboard=True, pbar_position=1)
             is_best = recalls[5] > best_score
             if is_best:
@@ -212,8 +217,5 @@ if __name__ == "__main__":
 
     logger.info("=> Best Recall@5: {:.4f}".format(best_score))
     writer.close()
-
-    torch.cuda.empty_cache()  # garbage clean GPU memory, a bug can occur when Pytorch doesn't automatically clear the
-    # memory after runs
-
+    torch.cuda.empty_cache()
     logger.info('Done')

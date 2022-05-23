@@ -1,4 +1,3 @@
-import imp
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models import resnet18, vgg16
@@ -94,21 +93,21 @@ def get_pool(name, norm=True):
     elif name == 'avg':
         pool = [nn.AdaptiveAvgPool2d((1, 1)), nn.Flatten(start_dim=1, end_dim=-1)]
     elif name == 'safa':
-        pool = [SPEPool(fmp_size=(7, 32), num_spe=1)]
+        pool = [SPEPool(fmp_size=(7, 32), num_spe=8)]
     elif name == 'identity':
         pool = [nn.Identity()]
     elif name == 'flatten':
         pool = [nn.AdaptiveAvgPool2d((7, 7)), nn.Flatten(start_dim=1, end_dim=-1)]
     elif name == 'fc':
-        pool = [nn.AdaptiveAvgPool2d((7, 7)),
-                nn.Flatten(start_dim=1, end_dim=-1),
-                nn.Linear(25088, 4096),
-                nn.ReLU(),
-                nn.Dropout(),
-                nn.Linear(4096, 512)]
         # pool = [nn.AdaptiveAvgPool2d((7, 7)),
         #         nn.Flatten(start_dim=1, end_dim=-1),
-        #         nn.Linear(25088, 512)]
+        #         nn.Linear(25088, 4096),
+        #         nn.ReLU(),
+        #         nn.Dropout(),
+        #         nn.Linear(4096, 512)]
+        pool = [nn.AdaptiveAvgPool2d((7, 7)),
+                nn.Flatten(start_dim=1, end_dim=-1),
+                nn.Linear(25088, 512)]
     else:
         raise NotImplementedError
     if norm: 
@@ -117,10 +116,13 @@ def get_pool(name, norm=True):
 
 
 def get_model(model_cfg):
-    from .simsiam import SimSiam
-    from .safa import CrossViewMatchingModel, CrossViewOriPredModel
+    from .simsiam import SimSiam, SimSiamv3
+    from .safa import CrossViewMatchingModel, CrossViewOriPredModel, CrossViewMatchingModelv2
     if model_cfg.name == 'simsiam':
-        model = SimSiam(model_cfg.backbone, model_cfg.pool)
+        if not model_cfg.shared:
+            model = SimSiam(model_cfg.backbone, model_cfg.pool)
+        else:
+            model = SimSiamv3(model_cfg.backbone, model_cfg.pool)
     elif model_cfg.name == 'cvm':
         model = CrossViewMatchingModel(model_cfg.backbone, model_cfg.pool, model_cfg.shared)
     elif model_cfg.name == 'oripred':

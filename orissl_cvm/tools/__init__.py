@@ -1,30 +1,3 @@
-'''
-MIT License
-
-Copyright (c) 2021 Stephen Hausler, Sourav Garg, Ming Xu, Michael Milford and Tobias Fischer
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-Additional functions used during training.
-'''
-
-
 from email.policy import strict
 import imp
 from matplotlib.pyplot import axis
@@ -187,7 +160,8 @@ def get_model_with_ckpt(cfg, logger):
                 ckpt = torch.load(cfg.train.load_path, map_location=lambda storage, loc: storage)
                 model = get_model(cfg.model)
                 if cfg.train.load_only_backbone:
-                    model.load_state_dict({k[9:] : v for k, v in ckpt['state_dict'].items() if k.startswith('features.')}, strict=True)
+                    model.features_gr.load_state_dict({k[12:] : v for k, v in ckpt['state_dict'].items() if k.startswith('features_gr.')}, strict=True)
+                    model.features_sa.load_state_dict({k[12:] : v for k, v in ckpt['state_dict'].items() if k.startswith('features_sa.')}, strict=True)
                 else:
                     model.load_state_dict(ckpt['state_dict'], strict=True)
                 logger.info("===> loaded model weights '{}'".format(cfg.train.load_path))
@@ -257,8 +231,7 @@ def show_cam_on_image(img, heatmap):
 
 
 def apply_colormap_on_image(org_im, activation, colormap_name):
-    """
-        Apply heatmap on image
+    """Apply heatmap on image
     Args:
         org_img (PIL img): Original image
         activation_map (numpy arr): Activation map (grayscale) 0-255
@@ -278,3 +251,41 @@ def apply_colormap_on_image(org_im, activation, colormap_name):
     heatmap_on_image = Image.alpha_composite(heatmap_on_image, org_im.convert('RGBA'))
     heatmap_on_image = Image.alpha_composite(heatmap_on_image, heatmap)
     return no_trans_heatmap, heatmap_on_image
+
+
+def register_hook(model, mode='double'):
+    '''Register hook on the last layer of backbone and pooling before normalization'''
+    if mode == 'double':
+        fmp_list_gr, fmp_list_sa = [], []
+        grad_list_gr, grad_list_sa = [], []
+        fh_gr = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list_gr)
+        bh_gr = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list_gr)
+        fh_sa = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list_sa)
+        bh_sa = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list_sa)
+        model.features_gr[-1].register_forward_hook(fh_gr)
+        model.features_gr[-1].register_full_backward_hook(bh_gr)
+        model.features_sa[-1].register_forward_hook(fh_sa)
+        model.features_sa[-1].register_full_backward_hook(bh_sa)
+        
+        d_list = []
+        fh_d = lambda module, input, output : forward_hook(module, input, output, fmp_list=d_list)
+        model.pool[-2].register_forward_hook(fh_d)
+
+        return fmp_list_gr, fmp_list_sa, grad_list_gr, grad_list_sa, d_list
+
+    elif mode == 'single':
+        fmp_list = []
+        grad_list = []
+        fh = lambda module, input, output : forward_hook(module, input, output, fmp_list=fmp_list)
+        bh = lambda module, grad_in, grad_out : backward_hook(module, grad_in, grad_out, grad_list=grad_list)
+        model.features[-1].register_forward_hook(fh)
+        model.features[-1].register_full_backward_hook(bh)
+        
+        d_list = []
+        fh_d = lambda module, input, output : forward_hook(module, input, output, fmp_list=d_list)
+        model.pool[-2].register_forward_hook(fh_d)
+
+        return fmp_list, grad_list, d_list
+    
+    else:
+        return NotImplementedError

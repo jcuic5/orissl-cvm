@@ -2,7 +2,7 @@ dataset:
   name: cvact
   dataset_root_dir: 'data/CVACT_full'
   dataset_version: '1k'
-  n_workers: 4
+  n_workers: 1
   train_loader_shuffle: True
 
 model:
@@ -21,12 +21,12 @@ train:
   eval_every: 1
   patience: 0
   save_every_epoch: False
-  threads: '4'
+  threads: '1'
   gpu_ids: '4'
   no_cuda: False
   n_gpu: 1
-  save_path: 'work_dirs'
-  # save_path: 'work_dirs_for_debug'
+  # save_path: 'work_dirs'
+  save_path: 'work_dirs_for_debug'
   resume_path: ''
   # resume_path: 'work_dirs_for_debug/May01_19-05-51_crossview_vit_cvact_1k/checkpoints/checkpoint.pth.tar'
   # resume_path: 'work_dirs/May09-2158_cvm_vgg16_max_noshared_cvact_mini/checkpoints/checkpoint.pth.tar'
@@ -48,15 +48,20 @@ train:
   # load_path: 'work_dirs/May15-0100_cvm_vgg16_safa_noshared_cvact_1k_8spes/checkpoints/model_best.pth.tar'
   # load_path: 'work_dirs/May16-0052_cvm_vgg16_safa_noshared_cvact_1k_8spes_simsiamv3/checkpoints/model_best.pth.tar'
   
+  # load_path: 'work_dirs/May17-2303_cvm_vgg16_max_noshared_cvact_1k/checkpoints/model_best.pth.tar'
+  # load_path: 'work_dirs/May17-2208_cvm_vgg16_max_noshared_cvact_1k/checkpoints/model_best.pth.tar'
+  # load_path: 'work_dirs/May17-2305_cvm_vgg16_max_noshared_cvact_1k/checkpoints/model_best.pth.tar'
+  # load_path: 'work_dirs/May17-2139_cvm_vgg16_max_noshared_cvact_1k/checkpoints/model_best.pth.tar'
+  # load_path: 'work_dirs/May18-0220_cvm_vgg16_max_noshared_cvact_1k_simsiam(fromscratch)/checkpoints/model_best.pth.tar'
   load_path: 'work_dirs/May17-2113_simsiam_vgg16_flatten_noshared_ground_cvact_mini/checkpoints/model_best.pth.tar,work_dirs/May17-2115_simsiam_vgg16_flatten_noshared_satellite_cvact_mini/checkpoints/model_best.pth.tar'
-  
+
   load_sep_branch: True
   load_only_backbone: False
   train_as_val: False
-  only_val: False
-  grad_cam: False
+  only_val: True
+  grad_cam: True
   check_align_and_uniform: True
-  extra_identifier: 'simsiam(fromscratch)'
+  extra_identifier: ''
 
 hyperparams:
   optim: 'adam'

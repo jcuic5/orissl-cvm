@@ -37,7 +37,7 @@ def random_slide_pano(img, mode='cls', num_dirs=4):
         # slide_w = random.randint(0, W - 1)
         # slide_w = random.randint(0, 15) * 32 # num of angles * num of pixels per step
         # NOTE for debug
-        slide_w = random.randint(0, 7) * 32
+        slide_w = random.randint(0, 3) * 32
         # slide_w = random.randint(0, 31) * 8
         # slide_w = random.randint(0, 1)
         # slide_w = slide_w * (W // 28 - 1) * 14
@@ -119,11 +119,11 @@ class SimSiamTransform():
         self.transform = T.Compose([
             T.RandomResizedCrop(image_size, scale=(0.2,1.0)),
             # T.RandomCrop((image_size[0], int(image_size[1]/1.2))), # NOTE my setting
-            T.Resize(image_size),
+            # T.Resize(image_size),
             T.RandomHorizontalFlip(),
             T.RandomApply([T.ColorJitter(0.4,0.4,0.4,0.1)], p=0.8),
             T.RandomGrayscale(p=0.2),
-            T.RandomApply([T.GaussianBlur(kernel_size=[x//20*2+1 for x in image_size], sigma=(0.1, 2.0))], p=p_blur),
+            T.RandomApply([T.GaussianBlur(kernel_size=[x//20*2+1 for x in image_size], sigma=(0.1,2.0))], p=p_blur),
             T.ToTensor(),
             T.Normalize(*mean_std)
         ])
