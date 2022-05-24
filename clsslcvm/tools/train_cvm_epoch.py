@@ -2,11 +2,10 @@ from operator import mod
 import torch
 from tqdm.auto import trange, tqdm
 from torch.utils.data import DataLoader
-from orissl_cvm.tools import humanbytes
-from orissl_cvm.datasets.cvact_dataset import CVACTDataset
-from orissl_cvm.tools import register_hook, gen_cam, show_cam_on_image
-from orissl_cvm.tools.visualize import visualize_assets
-from orissl_cvm.loss import *
+from clsslcvm.tools import humanbytes
+from clsslcvm.tools import register_hook, gen_cam, show_cam_on_image
+from clsslcvm.tools.visualize import visualize_assets
+from clsslcvm.loss import *
 import torchvision.transforms.functional as F
 from torchvision.transforms import InterpolationMode
 
@@ -15,7 +14,7 @@ def train_epoch(train_dataset, training_data_loader, model,
                 optimizer, scheduler, criterion, device, 
                 epoch_num, cfg, writer):
     epoch_loss = 0
-    n_batches = (len(train_dataset.qIdx) + cfg.train.batch_size - 1) // cfg.train.batch_size
+    n_batches = (len(train_dataset.q_idx) + cfg.train.batch_size - 1) // cfg.train.batch_size
     if cfg.train.check_align_and_uniform:
         epoch_loss_a = 0
         epoch_loss_u = 0
@@ -45,9 +44,9 @@ def train_epoch(train_dataset, training_data_loader, model,
         optimizer.zero_grad()
         loss = 0
         for i in range(n_triplets):
-            qidx, nidx = qn_triplets[i][0].item(), qn_triplets[i][1].item()
-            loss += criterion(descQ_gr[qidx: qidx+1], descQ_sa[qidx: qidx+1], descQ_sa[nidx: nidx+1])
-            loss += criterion(descQ_sa[qidx: qidx+1], descQ_gr[qidx: qidx+1], descQ_gr[nidx: nidx+1])
+            q_idx, nidx = qn_triplets[i][0].item(), qn_triplets[i][1].item()
+            loss += criterion(descQ_gr[q_idx: q_idx+1], descQ_sa[q_idx: q_idx+1], descQ_sa[nidx: nidx+1])
+            loss += criterion(descQ_sa[q_idx: q_idx+1], descQ_gr[q_idx: q_idx+1], descQ_gr[nidx: nidx+1])
         # loss += uniform_loss(descQ_gr) + uniform_loss(descQ_sa)
         loss /= n_triplets # normalise by actual number of negatives
         if cfg.train.grad_cam:

@@ -18,14 +18,14 @@ from tensorboardX import SummaryWriter
 import numpy as np
 from torch.utils.data import DataLoader
 
-from orissl_cvm import PACKAGE_ROOT_DIR
-from orissl_cvm.models import get_model
-from orissl_cvm.tools.pretrain_oripred_epoch import train_epoch
-from orissl_cvm.tools.val_oripred import val
-from orissl_cvm.tools import save_checkpoint, create_logger, log_config_to_file, get_model_with_ckpt
-from orissl_cvm.augmentations import input_transform, OriLabelPairTransform
-from orissl_cvm.datasets.cvact_dataset import CVACTDataset
-from orissl_cvm.tools.visualize import visualize_dataloader
+from clsslcvm import PACKAGE_ROOT_DIR
+from clsslcvm.models import get_model
+from clsslcvm.tools.pretrain_oripred_epoch import train_epoch
+from clsslcvm.tools.val_oripred import val
+from clsslcvm.tools import save_checkpoint, create_logger, log_config_to_file, get_model_with_ckpt
+from clsslcvm.augmentations import input_transform, OriLabelPairTransform
+from clsslcvm.datasets.cvact_dataset import CVACTDataset
+from clsslcvm.tools.visualize import visualize_dataloader
 
 from tqdm.auto import trange
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
                                  transform=OriLabelPairTransform((cfg.model.img_size_h, cfg.model.img_size_w)),
                                  logger=logger,
                                  version=cfg.dataset.dataset_version)
-    logger.info(f'Full num of image pairs in training set: {train_dataset.qImages.shape[0]}')
+    logger.info(f'Full num of image pairs in training set: {train_dataset.q_imgnames.shape[0]}')
     logger.info(f'Num of queries in training set: {len(train_dataset)}')
 
     training_data_loader = DataLoader(dataset=train_dataset, 
@@ -149,7 +149,7 @@ if __name__ == "__main__":
                                     transform=OriLabelPairTransform((cfg.model.img_size_h, cfg.model.img_size_w)), # NOTE because we're not really using this dataset
                                     logger=logger,
                                     version=cfg.dataset.dataset_version)
-    logger.info(f'Full num of image pairs in validation set: {val_dataset.qImages.shape[0]}')
+    logger.info(f'Full num of image pairs in validation set: {val_dataset.q_imgnames.shape[0]}')
     logger.info(f'Num of queries in validation set: {len(val_dataset)}')
     val_data_loader = DataLoader(dataset=val_dataset, 
         num_workers=cfg.dataset.n_workers,

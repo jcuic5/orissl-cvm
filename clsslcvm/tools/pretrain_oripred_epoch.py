@@ -3,18 +3,18 @@ import numpy as np
 import torch
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
-from orissl_cvm.tools import humanbytes
-from orissl_cvm.datasets.cvact_dataset import CVACTDataset
+from clsslcvm.tools import humanbytes
+from clsslcvm.datasets.cvact_dataset import CVACTDataset
 import matplotlib.pyplot as plt
-from orissl_cvm.tools.visualize import denormalize
-from orissl_cvm.loss import cycle_mse_loss
+from clsslcvm.tools.visualize import denormalize
+from clsslcvm.loss import cycle_mse_loss
 
 
 def train_epoch(train_dataset, training_data_loader, model, 
                 optimizer, scheduler, criterion, device, 
                 epoch_num, config, writer):
     epoch_loss = 0
-    n_batches = (len(train_dataset.qIdx) + config.train.batch_size - 1) // config.train.batch_size
+    n_batches = (len(train_dataset.q_idx) + config.train.batch_size - 1) // config.train.batch_size
     model.train()
     local_progress = tqdm(training_data_loader, position=1, leave=False, desc='Train Iter'.rjust(15))
     for iteration, batch in enumerate(local_progress):

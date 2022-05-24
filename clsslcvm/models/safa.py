@@ -4,11 +4,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from orissl_cvm.tools import visualize
+from clsslcvm.tools import visualize
 from .__init__ import get_backbone, get_pool, _initialize_weights
 from .simsiam import SimSiam
 from .vit import ViT
-from orissl_cvm.tools import show_cam_on_image
+from clsslcvm.tools import show_cam_on_image
 
 
 def horizontal_correlation(fmp1, fmp2):

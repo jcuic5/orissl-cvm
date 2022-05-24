@@ -6,13 +6,13 @@ from sklearn.feature_extraction import image
 import torch
 import torch.nn.functional as F
 from datetime import datetime
-from orissl_cvm import PACKAGE_ROOT_DIR
+from clsslcvm import PACKAGE_ROOT_DIR
 from os.path import join
 import sys
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
-from orissl_cvm.loss import uniform_loss
-from orissl_cvm.tools.vonmiseskde import VonMisesKDE
+from clsslcvm.loss import uniform_loss
+from clsslcvm.tools.vonmiseskde import VonMisesKDE
 
 
 def denormalize(im):

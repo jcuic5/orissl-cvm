@@ -4,10 +4,10 @@ import torch
 import faiss
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
-from orissl_cvm.datasets.cvact_dataset import ImagePairsFromList
-from orissl_cvm.augmentations import input_transform
-from orissl_cvm.tools.visualize import visualize_assets, visualize_featdist
-from orissl_cvm.loss import *
+from clsslcvm.datasets.generic_dataset import ImagePairsFromList
+from clsslcvm.augmentations import input_transform
+from clsslcvm.tools.visualize import visualize_assets, visualize_featdist
+from clsslcvm.loss import *
 
 
 def val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device, cfg, writer, epoch_num=0, write_tboard=False, pbar_position=0):
@@ -56,7 +56,7 @@ def val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device,
                 break
     # 简单来说，就是在以这个严格标准下评判（只要pred中的前这些个里面有一个真的是gt里的
     # 一个就可以）总共有多少比例的qidx
-    recall_at_n = correct_at_n / len(val_dataset.qIdx)
+    recall_at_n = correct_at_n / len(val_dataset.q_idx)
 
     all_recalls = {}  # make dict for output
     for i, n in enumerate(n_values):

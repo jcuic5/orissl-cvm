@@ -20,16 +20,16 @@ from tensorboardX import SummaryWriter
 import numpy as np
 from torch.utils.data import DataLoader
 
-from orissl_cvm import PACKAGE_ROOT_DIR
-from orissl_cvm.augmentations import SimSiamTransform
-from orissl_cvm.models import get_backbone
-from orissl_cvm.tools.val_cvm import val
-from orissl_cvm.tools import save_checkpoint, create_logger, log_config_to_file, visualize, register_hook, show_cam_on_image
-from orissl_cvm.augmentations import input_transform
-from orissl_cvm.datasets.cvact_dataset import CVACTDataset, ImagePairsFromList, ImagesFromList
-from orissl_cvm.models import get_model
-from orissl_cvm.optimizers import get_optimizer, LR_Scheduler
-from orissl_cvm.tools.visualize import visualize_assets
+from clsslcvm import PACKAGE_ROOT_DIR
+from clsslcvm.augmentations import SimSiamTransform
+from clsslcvm.models import get_backbone
+from clsslcvm.tools.val_cvm import val
+from clsslcvm.tools import save_checkpoint, create_logger, log_config_to_file, visualize, register_hook, show_cam_on_image
+from clsslcvm.augmentations import input_transform
+from clsslcvm.datasets.cvact_dataset import CVACTDataset, ImagePairsFromList, ImagesFromList
+from clsslcvm.models import get_model
+from clsslcvm.optimizers import get_optimizer, LR_Scheduler
+from clsslcvm.tools.visualize import visualize_assets
 
 from tqdm.auto import trange, tqdm
 
@@ -126,11 +126,11 @@ if __name__ == "__main__":
                                  transform=None,
                                  logger=logger,
                                  version=cfg.dataset.dataset_version)
-    logger.info(f'Full num of image pairs in training set: {train_dataset.qImages.shape[0]}')
+    logger.info(f'Full num of image pairs in training set: {train_dataset.q_imgnames.shape[0]}')
     logger.info(f'Num of queries in training set: {len(train_dataset)}')
     if cfg.model.shared:
         train_dataset = ImagePairsFromList(train_dataset.root_dir, 
-                                    train_dataset.qImages, 
+                                    train_dataset.q_imgnames, 
                                     transform=SimSiamTransform((cfg.model.img_size_h, cfg.model.img_size_w)))
         train_dataloader = DataLoader(dataset=train_dataset, 
             num_workers=cfg.dataset.n_workers,
@@ -142,7 +142,7 @@ if __name__ == "__main__":
         )
     else:
         train_dataset = ImagesFromList(train_dataset.root_dir, 
-                                    train_dataset.qImages, 
+                                    train_dataset.q_imgnames, 
                                     transform=SimSiamTransform((cfg.model.img_size_h, cfg.model.img_size_w)), 
                                     category=cfg.model.category)
         train_dataloader = DataLoader(dataset=train_dataset, 

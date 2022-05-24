@@ -1,6 +1,3 @@
-from email.policy import strict
-import imp
-from matplotlib.pyplot import axis
 import numpy as np
 from scipy.sparse.linalg import eigs
 import torch
@@ -10,12 +7,16 @@ from PIL import Image
 import logging
 from easydict import EasyDict
 from os.path import join, isfile
-from orissl_cvm.models import get_model
+from clsslcvm.models import get_model
 from torchvision.transforms.functional import resize
 from torchvision.transforms import InterpolationMode
-import torch.nn.functional as F
 import copy
 import matplotlib.cm as mpl_color_map
+from clsslcvm.datasets.cvact_dataset import CVACTDataset
+from clsslcvm.datasets.vigor_dataset import VIGORDataloader
+from torch.utils.data import DataLoader
+from clsslcvm.augmentations import input_transform, InputPairTransform
+from clsslcvm.datasets.generic_dataset import ImagePairsFromList
 
 
 def pca(x: np.ndarray, num_pcs=None, subtract_mean=True):
@@ -182,6 +183,56 @@ def get_model_with_ckpt(cfg, logger):
         model = get_model(cfg.model)
 
     return model, ckpt
+
+
+def get_dataset(cfg, logger):
+    if cfg.dataset.name == 'cvact':
+        dataset = CVACTDataset
+    elif cfg.dataset.name == 'vigor':
+        dataset = VIGORDataloader
+    else:
+        raise NotImplementedError
+    transform = InputPairTransform((cfg.model.img_size_h, cfg.model.img_size_w))
+    transform_single = input_transform((cfg.model.img_size_h, cfg.model.img_size_w))
+    # train dataset
+    train_dataset = dataset(cfg.dataset.dataset_root_dir, 
+        mode='train', 
+        transform=transform, 
+        logger=logger, 
+        version=cfg.dataset.version,
+    )
+    logger.info(f'Full num of image pairs in training set: {train_dataset.q_imgnames.shape[0]}')
+    logger.info(f'Num of queries in training set: {len(train_dataset)}')
+    train_dataloader = DataLoader(dataset=train_dataset, 
+        num_workers=cfg.dataset.n_workers,
+        batch_size=cfg.train.batch_size, 
+        shuffle=cfg.dataset.train_loader_shuffle,
+        collate_fn = train_dataset.collate_fn, 
+        pin_memory=True
+    )
+    # val dataset
+    if cfg.train.train_as_val is True:
+        # NOTE for debug, use train set it self to validate
+        val_dataset = train_dataset
+    else:
+        val_dataset = dataset(cfg.dataset.dataset_root_dir, 
+            mode='val', 
+            transform=transform, 
+            logger=logger, 
+            version=cfg.dataset.version)
+    logger.info(f'Full num of image pairs in validation set: {val_dataset.q_imgnames.shape[0]}')
+    logger.info(f'Num of queries in validation set: {len(val_dataset)}')
+    val_dataset_queries = ImagePairsFromList(val_dataset.root_dir, val_dataset.q_imgnames, transform=transform_single)
+    val_dataloader_queries = DataLoader(dataset=val_dataset_queries, 
+        batch_size=cfg.train.batch_size, 
+        shuffle=False, 
+        num_workers=cfg.dataset.n_workers, 
+        pin_memory=True, 
+        collate_fn=ImagePairsFromList.collate_fn
+    )
+
+    return train_dataset, train_dataloader, val_dataset, val_dataset_queries, val_dataloader_queries
+    
 
 
 def backward_hook(module, grad_in, grad_out, grad_list):

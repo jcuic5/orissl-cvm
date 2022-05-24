@@ -4,9 +4,9 @@ import torch.nn as nn
 import faiss
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
-from orissl_cvm.datasets.cvact_dataset import ImagePairsFromList
+from clsslcvm.datasets.cvact_dataset import ImagePairsFromList
 import matplotlib.pyplot as plt
-from orissl_cvm.tools.visualize import denormalize
+from clsslcvm.tools.visualize import denormalize
 
 def val(eval_loader, model, device, cfg, writer, epoch_num=0, write_tboard=False, pbar_position=0):
     model.eval()
