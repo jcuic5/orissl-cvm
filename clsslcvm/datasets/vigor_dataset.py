@@ -1,22 +1,24 @@
 import os
 from matplotlib.pyplot import axis
 import numpy as np
-from PIL import Image
 import random
-
 import torch
-
+from PIL import Image
 
 class VIGORDataloader():
-    def __init__(self, root_dir, mode, transform, logger, version, dim=4096, same_area=True, continuous=False, mining=False):
+    def __init__(self, root_dir, transform, logger, version='', dim=4096, same_area=False, continuous=False, mining=False):
         self.root_dir = root_dir
-        self.mode = mode
-        self.transform = transform
         self.logger = logger
+        self.dim = dim
         self.same_area = same_area
         self.continuous = continuous
         self.mining = mining
         label_root = 'splits' if version == '' else f'splits_{version}'
+
+        self.sat_size = [224, 224] #[320, 320]
+        self.grd_size = [224, 448] #[320, 640]
+        self.tf_sat = transform(self.sat_size)
+        self.tf_grd = transform(self.grd_size)
 
         if same_area:
             self.train_city_list = ['NewYork', 'Seattle', 'SanFrancisco', 'Chicago']
@@ -145,11 +147,10 @@ class VIGORDataloader():
             return None
         elif self.__cur_sat_id + batch_size >= self.test_sat_data_size:
             batch_size = self.test_sat_data_size - self.__cur_sat_id
-        batch_sat = []
+        batch_sat = torch.zeros([batch_size, 3, self.sat_size[0], self.sat_size[1]])
         for i in range(batch_size):
             img_idx = self.__cur_sat_id + i
-            batch_sat.append(self.transform(Image.open(self.test_sat_list[img_idx])))
-        batch_sat = torch.cat(batch_sat, dim=0)
+            batch_sat[i, :, :, :] = self.tf_sat(self.read_image(self.test_sat_list[img_idx]))
         self.__cur_sat_id += batch_size
         return batch_sat
 
@@ -160,11 +161,10 @@ class VIGORDataloader():
             return None
         elif self.__cur_test_id + batch_size >= self.test_data_size:
             batch_size = self.test_data_size - self.__cur_test_id
-        batch_grd = []
+        batch_grd = torch.zeros([batch_size, 3, self.grd_size[0], self.grd_size[1]])
         for i in range(batch_size):
             img_idx = self.__cur_test_id + i
-            batch_grd.append(self.transform(Image.open(self.test_list[img_idx])))
-        batch_grd = torch.cat(batch_grd, dim=0)
+            batch_grd[i, :, :, :] = self.tf_grd(self.read_image(self.test_list[img_idx]))
         self.__cur_test_id += batch_size
         return batch_grd
 
@@ -177,12 +177,14 @@ class VIGORDataloader():
         elif self.__cur_test_id + batch_size >= self.test_data_size:
             batch_size = self.test_data_size - self.__cur_test_id
 
-        batch_list, batch_grd, batch_sat = [], [], []
+        batch_list = []
+        batch_sat = torch.zeros([batch_size, 3, self.sat_size[0], self.sat_size[1]])
+        batch_grd = torch.zeros([batch_size, 3, self.grd_size[0], self.grd_size[1]])
         for i in range(batch_size):
             img_idx = self.__cur_test_id + i
             batch_list.append(img_idx)
-            batch_sat.append(self.transform(Image.open(self.test_list[img_idx])))
-            batch_sat.append(self.transform(Image.open(self.test_sat_list[order_list[img_idx]])))
+            batch_sat[i, :, :, :] = self.tf_sat(self.read_image(self.test_sat_list[order_list[img_idx]]))
+            batch_grd[i, :, :, :] = self.tf_grd(self.read_image(self.test_list[img_idx]))
         self.__cur_test_id += batch_size
         return batch_sat, batch_grd, np.array(batch_list)
 
@@ -208,17 +210,20 @@ class VIGORDataloader():
     def next_batch_train(self, batch_size):
         if self.mining and self.mining_pool_ready:
             if self.continuous:
-                delta_list, delta_list_semi, batch_sat, batch_sat_semi, batch_grd, batch_list = [], [], [], [], [], []
+                delta_list = np.ones([batch_size * 2, 2])
+                batch_sat = torch.zeros([batch_size, 3, self.sat_size[0], self.sat_size[1]])
+                batch_grd = torch.zeros([batch_size, 3, self.grd_size[0], self.grd_size[1]])
+                batch_list = []
                 for batch_idx in range(int(batch_size / 2)):
                     while True:
                         img_idx = self.gen_idx()
                         if self.check_non_overlap(batch_list, img_idx): break
                     image_sat, image_sat_semi, image_grd, delta, delta_semi = self.get_item(img_idx)
-                    batch_sat.append(image_sat)
-                    batch_sat_semi.append(image_sat_semi)
-                    batch_grd.append(image_grd)
-                    delta_list.append(delta)
-                    delta_list_semi.append(delta_semi)
+                    batch_sat[batch_idx, :, :, :] = image_sat
+                    delta_list[batch_idx, :] = delta
+                    batch_sat[batch_idx + batch_size, :, :, :] = image_sat_semi
+                    delta_list[batch_idx + batch_size, :] = delta_semi
+                    batch_grd[batch_idx, :, :, :] = image_grd
                     batch_list.append(img_idx)
 
                 for batch_idx in range(int(batch_size / 2)):
@@ -237,25 +242,26 @@ class VIGORDataloader():
                         if self.check_non_overlap(batch_list, img_idx):
                             break
                     image_sat, image_sat_semi, image_grd, delta, delta_semi = self.get_item(img_idx)
-                    batch_sat.append(image_sat)
-                    batch_sat_semi.append(image_sat_semi)
-                    batch_grd.append(image_grd)
-                    delta_list.append(delta)
-                    delta_list_semi.append(delta_semi)
+                    batch_sat[int(batch_idx + batch_size / 2), :, :, :] = image_sat
+                    delta_list[int(batch_idx + batch_size / 2), :] = delta
+                    batch_sat[int(batch_idx + batch_size / 2 + batch_size), :, :, :] = image_sat_semi
+                    delta_list[int(batch_idx + batch_size / 2 + batch_size), :] = delta_semi
+                    batch_grd[int(batch_idx + batch_size / 2), :, :, :] = image_grd
                     batch_list.append(img_idx)
-                delta_list = np.concatenate(delta_list + delta_list_semi, axis=0)
-                batch_sat, batch_grd = torch.cat(batch_sat + batch_sat_semi, dim=0), torch.cat(batch_grd, dim=0)
                 return batch_sat, batch_grd, np.array(batch_list), delta_list
             else:
-                delta_list, batch_sat, batch_grd, batch_list = [], [], [], []
+                delta_list = np.ones([batch_size, 2])
+                batch_sat = torch.zeros([batch_size, 3, self.sat_size[0], self.sat_size[1]])
+                batch_grd = torch.zeros([batch_size, 3, self.grd_size[0], self.grd_size[1]])
+                batch_list = []
                 for batch_idx in range(int(batch_size / 2)):
                     while True:
                         img_idx = self.gen_idx()
                         if self.check_non_overlap(batch_list, img_idx): break
                     image_sat, image_grd, delta = self.get_item(img_idx)
-                    batch_sat.append(image_sat)
-                    batch_grd.append(image_grd)
-                    delta_list.append(delta)
+                    batch_sat[batch_idx, :, :, :] = image_sat
+                    batch_grd[batch_idx, :, :, :] = image_grd
+                    delta_list[batch_idx, :] = delta
                     batch_list.append(img_idx)
                 for batch_idx in range(int(batch_size / 2)):
                     choice_count = 0
@@ -273,54 +279,54 @@ class VIGORDataloader():
                         if self.check_non_overlap(batch_list, img_idx):
                             break
                     image_sat, image_grd, delta = self.get_item(img_idx)
-                    batch_sat.append(image_sat)
-                    batch_grd.append(image_grd)
-                    delta_list.append(delta)
+                    batch_sat[int(batch_idx + batch_size / 2), :, :, :] = image_sat
+                    batch_grd[int(batch_idx + batch_size / 2), :, :, :] = image_grd
+                    delta_list[int(batch_idx + batch_size / 2), :] = delta
                     batch_list.append(img_idx)
-                delta_list = np.concatenate(delta_list, axis=0)
-                batch_sat, batch_grd = torch.cat(batch_sat, dim=0), torch.cat(batch_grd, dim=0)
                 return batch_sat, batch_grd, np.array(batch_list), delta_list
 
         else:
             if self.continuous:
-                delta_list, delta_list_semi, batch_sat, batch_sat_semi, batch_grd, batch_list = [], [], [], [], [], []
+                delta_list = np.ones([batch_size * 2, 2])
+                batch_sat = torch.zeros([batch_size * 2, 3, self.sat_size[0], self.sat_size[1]])
+                batch_grd = torch.zeros([batch_size, 3, self.grd_size[0], self.grd_size[1]])
+                batch_list = []
                 for batch_idx in range(batch_size):
                     while True:
                         img_idx = self.gen_idx()
                         if self.check_non_overlap(batch_list, img_idx): break
                     image_sat, image_sat_semi, image_grd, delta, delta_semi = self.get_item(img_idx)
-                    batch_sat.append(image_sat)
-                    batch_sat_semi.append(image_sat_semi)
-                    batch_grd.append(image_grd)
-                    delta_list.append(delta)
-                    delta_list_semi.append(delta_semi)
+                    batch_sat[batch_idx, :, :, :] = image_sat
+                    delta_list[batch_idx, :] = delta
+                    batch_sat[batch_idx + batch_size, :, :, :] = image_sat_semi
+                    delta_list[batch_idx + batch_size, :] = delta_semi
+                    batch_grd[batch_idx, :, :, :] = image_grd
                     batch_list.append(img_idx)
-                delta_list = np.concatenate(delta_list + delta_list_semi, axis=0)
-                batch_sat, batch_grd = torch.cat(batch_sat + batch_sat_semi, dim=0), torch.cat(batch_grd, dim=0)
                 return batch_sat, batch_grd, np.array(batch_list), delta_list
             else:
-                delta_list, batch_sat, batch_grd, batch_list = [], [], [], []
+                delta_list = np.ones([batch_size, 2])
+                batch_sat = torch.zeros([batch_size, 3, self.sat_size[0], self.sat_size[1]])
+                batch_grd = torch.zeros([batch_size, 3, self.grd_size[0], self.grd_size[1]])
+                batch_list = []
                 for batch_idx in range(batch_size):
                     while True:
                         img_idx = self.gen_idx()
                         if self.check_non_overlap(batch_list, img_idx): break
                     image_sat, image_grd, delta = self.get_item(img_idx)
-                    batch_sat.append(image_sat)
-                    batch_grd.append(image_grd)
-                    delta_list.append(delta)
+                    batch_sat[batch_idx, :, :, :] = image_sat
+                    batch_grd[batch_idx, :, :, :] = image_grd
+                    delta_list[batch_idx, :] = delta
                     batch_list.append(img_idx)
-                delta_list = np.concatenate(delta_list, axis=0)
-                batch_sat, batch_grd = torch.cat(batch_sat, dim=0), torch.cat(batch_grd, dim=0)
                 return batch_sat, batch_grd, np.array(batch_list), delta_list
 
 
     def get_item(self, img_idx):
-        image_sat = self.transform(Image.open(self.train_sat_list[self.train_label[img_idx][0]]))
-        image_grd = self.transform(Image.open(self.train_list[img_idx]))
+        image_sat = self.tf_sat(self.read_image(self.train_sat_list[self.train_label[img_idx][0]]))
+        image_grd = self.tf_grd(self.read_image(self.train_list[img_idx]))
 
         if self.continuous:
             randx = random.randrange(1, 4)
-            image_sat_semi = self.transform(Image.open(self.train_sat_list[self.train_label[img_idx][randx]]))
+            image_sat_semi = self.tf_sat(self.read_image(self.train_sat_list[self.train_label[img_idx][randx]]))
             return image_sat, image_sat_semi, image_grd, self.train_delta[img_idx, 0], self.train_delta[img_idx, randx]
 
         return image_sat, image_grd, self.train_delta[img_idx, 0]
@@ -339,3 +345,13 @@ class VIGORDataloader():
     def reset_iter(self):
         self.__cur_test_id = 0
         self.__cur_sat_id = 0
+
+
+    def read_image(self, path):
+        # img = cv2.imread(path).astype(np.float32)
+        # img[:, :, 0] -= 103.939  # Blue
+        # img[:, :, 1] -= 116.779  # Green
+        # img[:, :, 2] -= 123.6  # Red
+        # img = Image.fromarray(img.astype(np.uint8))
+        img = Image.open(path).convert("RGB")
+        return img

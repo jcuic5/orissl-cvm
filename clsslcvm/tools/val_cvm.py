@@ -4,49 +4,43 @@ import torch
 import faiss
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
-from clsslcvm.datasets.generic_dataset import ImagePairsFromList
 from clsslcvm.augmentations import input_transform
 from clsslcvm.tools.visualize import visualize_assets, visualize_featdist
 from clsslcvm.loss import *
 
 
-def val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device, cfg, writer, epoch_num=0, write_tboard=False, pbar_position=0):
+def val(dataloader, model, device, cfg, writer, epoch_num=0, write_tboard=False, pbar_position=0):
     model.eval()
-    # dynamically determine descriptor's dim
-    it = iter(val_dataloader_queries)
-    with torch.no_grad():
-        img_gr, img_sa, indices = next(it)
-        img_gr, img_sa = img_gr.to(device), img_sa.to(device)
-        desc_dim = model(img_gr, img_sa)[0].shape[-1]
-    del img_gr, img_sa, indices, it
-
+    batch_size = cfg.train.batch_size
+    n_batches_grd = (dataloader.train_data_size + batch_size - 1) // batch_size
+    n_batches_sat = (dataloader.test_data_size + batch_size - 1) // batch_size
+    dim = dataloader.dim
     # start extracting features
     with torch.no_grad():
         tqdm.write('====> Extracting Features')
-        qFeat_gr = np.empty((len(val_dataset_queries), desc_dim), dtype=np.float32)
-        qFeat_sa = np.empty((len(val_dataset_queries), desc_dim), dtype=np.float32)
-
-        local_progress = tqdm(val_dataloader_queries, position=pbar_position, leave=False, desc='Test Iter'.rjust(15))
-        for iteration, batch in enumerate(local_progress, 1):
-            if batch is None: 
-                tqdm.write('====> Current batch is None')
-                continue
-            img_gr, img_sa, indices = batch
-            img_gr, img_sa = img_gr.to(device), img_sa.to(device)
-            descQ_gr, descQ_sa = model(img_gr, img_sa)
-            qFeat_gr[indices.detach().numpy(), :] = descQ_gr.detach().cpu().numpy()
-            qFeat_sa[indices.detach().numpy(), :] = descQ_sa.detach().cpu().numpy()
-            del img_gr, img_sa, descQ_gr, descQ_sa
+        desc_grd_all = np.empty((dataloader.test_sat_data_size, dim), dtype=np.float32)
+        desc_sat_all = np.empty((dataloader.test_data_size, dim), dtype=np.float32)
+        it = 0
+        for i in tqdm(range(n_batches_grd), position=pbar_position, leave=False, desc='Test Iter'.rjust(15)):
+            batch_grd = dataloader.next_batch_test_grd(batch_size)
+            desc_grd = model.pool_gr(model.features_gr(batch_grd.to(device)))
+            desc_grd_all[it: it + desc_grd.shape[0], :] = desc_grd.detach().cpu().numpy()
+            it += desc_grd.shape[0]
+        for it in tqdm(range(n_batches_sat), position=pbar_position, leave=False, desc='Test Iter'.rjust(15)):
+            batch_sat = dataloader.next_batch_test_sat(batch_size)
+            desc_sat = model.pool_sa(model.features_sa(batch_sat.to(device)))
+            desc_sat_all[it: it + desc_sat.shape[0], :] = desc_grd.detach().cpu().numpy()
+            it += desc_grd.shape[0]
 
     # start evaluation
     tqdm.write('====> Calculating recall @ N')
     n_values = [1, 5, 10, 20, 50, 100]
     # for each query, get its positive samples within the threshold distance
-    gt = val_dataset.all_pos_indices
+    gt = dataloader.test_label
 
-    faiss_index = faiss.IndexFlatL2(desc_dim)
-    faiss_index.add(qFeat_sa)
-    _, predictions = faiss_index.search(qFeat_gr, max(n_values))
+    faiss_index = faiss.IndexFlatL2(dim)
+    faiss_index.add(desc_sat_all)
+    _, predictions = faiss_index.search(desc_grd_all, max(n_values))
     correct_at_n = np.zeros(len(n_values))
     for qIx, pred in enumerate(predictions):
         for i, n in enumerate(n_values):
@@ -56,7 +50,7 @@ def val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device,
                 break
     # 简单来说，就是在以这个严格标准下评判（只要pred中的前这些个里面有一个真的是gt里的
     # 一个就可以）总共有多少比例的qidx
-    recall_at_n = correct_at_n / len(val_dataset.q_idx)
+    recall_at_n = correct_at_n / dataloader.train_data_size
 
     all_recalls = {}  # make dict for output
     for i, n in enumerate(n_values):
@@ -65,12 +59,12 @@ def val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device,
         if write_tboard:
             writer.add_scalar('Val/Recall@' + str(n), recall_at_n[i], epoch_num)
 
-    # NOTE for debug visualize desciptor dsitribution using t-SNE
-    ul_gr, ul_sa = uniform_loss(torch.tensor(qFeat_gr)).item(), uniform_loss(torch.tensor(qFeat_sa)).item()
-    caption = f'\
-        Model: {cfg.identifier}\n\
-        Unifomity: {ul_gr:.2f}, {ul_sa:.2f}.Recall@1: {recall_at_n[0]:.2f}, Recall@5: {recall_at_n[1]:.2f}'
-    visualize_featdist(qFeat_gr, qFeat_sa, caption)
+    # # NOTE for debug visualize desciptor dsitribution using t-SNE
+    # ul_gr, ul_sa = uniform_loss(torch.tensor(desc_grd_all)).item(), uniform_loss(torch.tensor(desc_sat_all)).item()
+    # caption = f'\
+    #     Model: {cfg.identifier}\n\
+    #     Unifomity: {ul_gr:.2f}, {ul_sa:.2f}.Recall@1: {recall_at_n[0]:.2f}, Recall@5: {recall_at_n[1]:.2f}'
+    # visualize_featdist(desc_grd_all, desc_sat_all, caption)
 
     # # NOTE visualize the retrieval result
     # num_samples = 4

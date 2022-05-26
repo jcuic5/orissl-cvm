@@ -1,28 +1,25 @@
 dataset:
   name: vigor
   dataset_root_dir: 'data/VIGOR'
-  version: ''
+  version: 'newfull'
   n_workers: 1
   train_loader_shuffle: True
 
 model:
   name: cvm
   backbone: vgg16
-  pool: max
-  shared: False
-  img_size_w: 512
-  img_size_h: 112
+  pool: fc
 
 train:
   seed: 42
-  batch_size: 8
-  n_epochs: 80
+  batch_size: 16
+  n_epochs: 30
   start_epoch: 0
   eval_every: 1
   patience: 0
   save_every_epoch: False
   threads: '1'
-  gpu_ids: '6'
+  gpu_ids: '7'
   n_gpu: 1
   # save_path: 'work_dirs'
   save_path: 'work_dirs_for_debug'

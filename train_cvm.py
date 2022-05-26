@@ -106,8 +106,7 @@ if __name__ == "__main__":
     criterion = SoftTripletLoss()
     # Dataset and dataloader
     logger.info('===> Loading dataset(s)')
-    train_dataset, train_dataloader, \
-        val_dataset, val_dataset_queries, val_dataloader_queries = get_dataset(cfg, logger)
+    dataloader = get_dataset(cfg, logger)
 
     # SummaryWriter, and create logdir
     writer = SummaryWriter(log_dir=logdir)
@@ -121,8 +120,7 @@ if __name__ == "__main__":
 
     # If only want to validate
     if cfg.train.only_val:
-        val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device, cfg, writer, epoch_num=0,
-                        write_tboard=False, pbar_position=0)
+        val(dataloader, model, device, cfg, writer, epoch_num=0,write_tboard=False, pbar_position=0)
         writer.close()
         torch.cuda.empty_cache()
         logger.info('Done')
@@ -131,15 +129,14 @@ if __name__ == "__main__":
     # Training
     logger.info('===> Training model')
     for epoch in trange(cfg.train.start_epoch + 1, cfg.train.n_epochs + 1, desc='Epoch number'.rjust(15), position=0):
-        train_epoch(train_dataset, train_dataloader, model, optimizer, scheduler, criterion, device, epoch, cfg, writer)
+        train_epoch(dataloader, model, optimizer, scheduler, criterion, device, epoch, cfg, writer)
         
         if (epoch % cfg.train.eval_every) == 0:
-            recalls = val(val_dataset, val_dataset_queries, val_dataloader_queries, model, device, cfg, writer, epoch,
-                          write_tboard=True, pbar_position=1)
-            is_best = recalls[5] > best_score
+            recalls = val(dataloader, model, device, cfg, writer, epoch, write_tboard=True, pbar_position=1)
+            is_best = recalls[1] > best_score
             if is_best:
                 not_improved = 0
-                best_score = recalls[5]
+                best_score = recalls[1]
             else:
                 not_improved += 1
 

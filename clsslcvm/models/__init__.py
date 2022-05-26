@@ -48,8 +48,8 @@ def get_backbone(name):
         # backbone = eval(f"{name}()")
         backbone = vgg16(pretrained=True)
         # drop the last two layers: ReLU and MaxPool2d
-        layers = list(backbone.features.children())[:-1]
-        layers[-1] = nn.ReLU(inplace=False)
+        layers = list(backbone.features.children())
+        # layers[-1] = nn.ReLU(inplace=False)
         # layers = [x for x in layers if not isinstance(x, nn.ReLU)]
 
         # optionally freeze part of the backbone
@@ -104,10 +104,10 @@ def get_pool(name, norm=True):
         #         nn.Linear(25088, 4096),
         #         nn.ReLU(),
         #         nn.Dropout(),
-        #         nn.Linear(4096, 512)]
+        #         nn.Linear(4096, 4096)]
         pool = [nn.AdaptiveAvgPool2d((7, 7)),
                 nn.Flatten(start_dim=1, end_dim=-1),
-                nn.Linear(25088, 512)]
+                nn.Linear(25088, 4096)]
     else:
         raise NotImplementedError
     if norm: 
@@ -117,16 +117,14 @@ def get_pool(name, norm=True):
 
 def get_model(model_cfg):
     from .simsiam import SimSiam, SimSiamv3
-    from .safa import CrossViewMatchingModel, CrossViewOriPredModel, CrossViewMatchingModelv2
+    from .safa import CVMModel
     if model_cfg.name == 'simsiam':
         if not model_cfg.shared:
             model = SimSiam(model_cfg.backbone, model_cfg.pool)
         else:
             model = SimSiamv3(model_cfg.backbone, model_cfg.pool)
     elif model_cfg.name == 'cvm':
-        model = CrossViewMatchingModel(model_cfg.backbone, model_cfg.pool, model_cfg.shared)
-    elif model_cfg.name == 'oripred':
-        model = CrossViewOriPredModel(model_cfg.backbone, model_cfg.pool, model_cfg.shared)
+        model = CVMModel(model_cfg.backbone, model_cfg.pool)
     else:
         raise NotImplementedError
 
