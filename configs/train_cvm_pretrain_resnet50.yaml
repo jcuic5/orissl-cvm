@@ -2,11 +2,11 @@ dataset:
   name: vigor
   dataset_root_dir: 'data/VIGOR'
   version: 'newfull'
-  n_workers: 1
+  n_workers: 2
 
 model:
   name: cvm
-  backbone: vgg16
+  backbone: resnet50
   pool: fc
   imagenet: False
 
@@ -15,30 +15,29 @@ train:
   batch_size: 96
   n_epochs: 60
   start_epoch: 0
-  eval_every: 3
+  eval_every: 2
   patience: 0
   save_every_epoch: True
   threads: '2'
   gpu_ids: '0'
   n_gpu: 1
   slurm: True
-  # save_path: 'work_dirs'
-  save_path: 'work_dirs_for_debug'
+  save_path: 'work_dirs'
+  # save_path: 'work_dirs_for_debug'
   resume_path: ''
   # resume_path: 'work_dirs/May28-0342_cvm_vgg16_fc_vigor_newfull/checkpoints/checkpoint_epoch12.pth.tar'
   # load_path: ''
-  load_path: 'work_dirs/Jun14-0425_cvm_vgg16_fc_vigor_newfull/checkpoints/checkpoint_epoch0.pth.tar'
-  # load_path: 'work_dirs/Jun13-1620_cvm_vgg16_fc_vigor_newfull/checkpoints/checkpoint_epoch0.pth.tar'
-  # load_path: 'work_dirs/Jun13-1623_cvm_vgg16_fc_vigor_newfull/checkpoints/model_best.pth.tar'
+  # load_path: 'work_dirs/May29-2325_cvm_vgg16_fc_vigor_new5k/checkpoints/checkpoint.pth.tar'
+  load_path: 'assets/pretrained_models/checkpoint_0099.pth.tar'
   load_sep_branch: False
   load_sep_branch_single: ''
-  load_only_backbone: False
+  load_only_backbone: True
   train_as_val: False
   only_val: False
-  start_with_val: False
-  grad_cam: True
+  start_with_val: True
+  grad_cam: False
   check_align_and_uniform: True
-  extra_identifier: ''
+  extra_identifier: 'pretrained-resnet50'
 
 hyperparams:
   optim: 'adam'

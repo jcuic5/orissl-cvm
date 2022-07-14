@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "train_cvm.py", line 22, in <module>
+    from clsslcvm.tools.train_cvm_epoch import train_epoch
+  File "/tudelft.net/staff-umbrella/CVMdata/Jianfeng/projects/orissl-cvm/clsslcvm/tools/__init__.py", line 13, in <module>
+    from torchvision.transforms import InterpolationMode
+ImportError: cannot import name 'InterpolationMode' from 'torchvision.transforms' (/home/nfs/jianfengcui/.local/lib/python3.8/site-packages/torchvision/transforms/__init__.py)

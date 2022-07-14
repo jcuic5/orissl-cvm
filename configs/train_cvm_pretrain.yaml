@@ -1,0 +1,53 @@
+dataset:
+  name: vigor
+  dataset_root_dir: 'data/VIGOR'
+  version: 'newfull'
+  n_workers: 32
+
+model:
+  name: cvm
+  backbone: vgg16
+  pool: fc
+  imagenet: True
+  # freeze_sat: 'total'
+  # fc_norm_init: True
+
+train:
+  seed: 42
+  batch_size: 96
+  n_epochs: 100
+  start_epoch: 0
+  eval_every: 3
+  patience: 0
+  save_every_epoch: True
+  threads: '2'
+  gpu_ids: '0'
+  n_gpu: 1
+  slurm: True
+  save_path: 'work_dirs'
+  # save_path: 'work_dirs_for_debug'
+  resume_path: ''
+  # resume_path: 'work_dirs/May28-0342_cvm_vgg16_fc_vigor_newfull/checkpoints/checkpoint_epoch12.pth.tar'
+  # load_path: ''
+  # load_path: 'assets/pretrained_models/[mocov2_imagenet_sat_full_200e]_Jun13-0028_checkpoint_0199.pth.tar'
+  # load_path: 'assets/pretrained_models/[mocov2_imagenet_sat_train_200e]_checkpoint_0199.pth.tar'
+  # load_path: 'assets/pretrained_models/[mocov2_imagenet_sat_val_200e]_checkpoint_0199.pth.tar'
+  load_path: 'assets/pretrained_models/[mocov2_imagenet_grd_full_135e_imperfect]_checkpoint_0134.pth.tar,assets/pretrained_models/[mocov2_imagenet_sat_full_200e]_Jun13-0028_checkpoint_0199.pth.tar'
+  load_sep_branch: True
+  load_sep_branch_single: ''
+  load_only_backbone: False
+  train_as_val: False
+  only_val: False
+  start_with_val: True
+  grad_cam: False
+  check_align_and_uniform: True
+  extra_identifier: ''
+
+hyperparams:
+  optim: 'adam'
+  weight_decay: 0.001
+  momentum: 0.9
+  lr: 0.0001
+  lr_step: 5
+  lr_gamma: 0.5
+  margin: 0.1

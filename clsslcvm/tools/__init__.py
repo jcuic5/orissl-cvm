@@ -1,3 +1,4 @@
+from statistics import mode
 import numpy as np
 from scipy.sparse.linalg import eigs
 import torch
@@ -9,13 +10,26 @@ from easydict import EasyDict
 from os.path import join, isfile
 from clsslcvm.models import get_model
 from torchvision.transforms.functional import resize
-from torchvision.transforms import InterpolationMode
+from enum import Enum
 import copy
 import matplotlib.cm as mpl_color_map
-from clsslcvm.datasets.cvact_dataset import CVACTDataset
-from clsslcvm.datasets.vigor_dataset import VIGORDataloader
+from torch.utils.data.sampler import RandomSampler
+from clsslcvm.datasets.vigor_dataset import VIGORDataset, NonOverlapBatchSampler
+from clsslcvm.datasets.generic_dataset import ImagesFromList
 from torch.utils.data import DataLoader
-from clsslcvm.augmentations import input_transform, InputPairTransform
+from clsslcvm.augmentations import input_transform, SimSiamTransform
+
+
+class InterpolationMode(Enum):
+    """Interpolation modes
+    """
+    NEAREST = "nearest"
+    BILINEAR = "bilinear"
+    BICUBIC = "bicubic"
+    # For PIL compatibility
+    BOX = "box"
+    HAMMING = "hamming"
+    LANCZOS = "lanczos"
 
 
 def pca(x: np.ndarray, num_pcs=None, subtract_mean=True):
@@ -96,14 +110,20 @@ def humanbytes(B):
         return '{0:.2f} TB'.format(B/TB)
 
 
-def save_checkpoint(state, config, is_best_sofar, filename='checkpoint.pth.tar'):
-    if config.train.save_every_epoch:
-        model_out_path = join(config.train.save_file_path, 'checkpoint_epoch' + str(state['epoch']) + '.pth.tar')
+def save_checkpoint(state, desc_grd_all, desc_sat_all, cfg, is_best_sofar, filename='checkpoint.pth.tar'):
+    if cfg.train.save_every_epoch:
+        model_out_path = join(cfg.train.save_file_path, 'checkpoint_epoch' + str(state['epoch']) + '.pth.tar')
+        if desc_grd_all is not None and desc_sat_all is not None:
+            np.save(join(cfg.train.save_file_path, 'desc_sat_all_epoch' + str(state['epoch']) + '.npy'), desc_sat_all)
+            np.save(join(cfg.train.save_file_path, 'desc_grd_all_epoch' + str(state['epoch']) + '.npy'), desc_grd_all)
     else:
-        model_out_path = join(config.train.save_file_path, filename)
+        model_out_path = join(cfg.train.save_file_path, filename)
+        if desc_grd_all is not None and desc_sat_all is not None:
+            np.save(join(cfg.train.save_file_path, 'desc_sat_all.npy'), desc_sat_all)
+            np.save(join(cfg.train.save_file_path, 'desc_grd_all.npy'), desc_grd_all)
     torch.save(state, model_out_path)
     if is_best_sofar:
-        shutil.copyfile(model_out_path, join(config.train.save_file_path, 'model_best.pth.tar'))
+        shutil.copyfile(model_out_path, join(cfg.train.save_file_path, 'model_best.pth.tar'))
 
 
 def create_logger(log_file=None, rank=0, log_level=logging.INFO):
@@ -133,51 +153,87 @@ def log_config_to_file(cfg, pre='cfg', logger=None):
         logger.info('%s.%s: %s' % (pre, key, val))
 
 
+def load_branch(model, ckpt, branch):
+    # rename moco pre-trained keys
+    state_dict = ckpt['state_dict']
+    for k in list(state_dict.keys()):
+        # retain only encoder_q up to before the embedding layer
+        if k.startswith('module.encoder_q') and not k.startswith('module.encoder_q.fc'):
+            # remove prefix
+            state_dict[k[len("module.encoder_q."):]] = state_dict[k]
+        # delete renamed or unused k
+        del state_dict[k]
+    # msg = model.load_state_dict(state_dict, strict=False)
+    # assert set(msg.missing_keys) == {"fc.weight", "fc.bias"}
+    getattr(model, f'features_{branch}').load_state_dict({k[9:] : v for k, v in state_dict.items() if k.startswith('features.')}, strict=True)
+
+
 def get_model_with_ckpt(cfg, logger):
     model, ckpt = None, None
 
     if cfg.train.resume_path and cfg.train.load_path:
-        raise RuntimeError("===> Resume path and load path are both indicated!")
+        raise RuntimeError("resume path and load path are both indicated!")
     elif cfg.train.load_path:
+        # contrastive learning pretrained model
         if cfg.train.load_sep_branch:
-            load_path_gr, load_path_sa = cfg.train.load_path.split(',')
-            if isfile(load_path_gr) and isfile(load_path_sa):
-                logger.info("===> loading branch weights separately '{}'".format(cfg.train.load_path))
-                ckpt_gr = torch.load(load_path_gr, map_location=lambda storage, loc: storage)
-                ckpt_sa = torch.load(load_path_sa, map_location=lambda storage, loc: storage)
-                model = get_model(cfg.model)
-                # NOTE For debug, check if params are loaded
-                # p1 = next(iter(model.model_gr.backbone.parameters()))
-                # p2 = model_gr['state_dict']['backbone.0.weight']
-                model.features_gr.load_state_dict({k[9:] : v for k, v in ckpt_gr['state_dict'].items() if k.startswith('features.')}, strict=True)
-                model.features_sa.load_state_dict({k[9:] : v for k, v in ckpt_sa['state_dict'].items() if k.startswith('features.')}, strict=True)
-                logger.info("===> loaded branch weights separately '{}'".format(cfg.train.load_path))
+            # load single branch
+            if cfg.train.load_sep_branch_single != '':
+                if isfile(cfg.train.load_path):                    
+                    logger.info("loading model weights '{}'".format(cfg.train.load_path))
+                    ckpt = torch.load(cfg.train.load_path, map_location=lambda storage, loc: storage)
+                    model = get_model(cfg.model)
+                    if cfg.train.load_sep_branch_single == 'gr':
+                        load_branch(model, ckpt, branch='gr')
+                    elif cfg.train.load_sep_branch_single == 'sa':
+                        load_branch(model, ckpt, branch='sa')
+                    logger.info("loaded model weights '{}'".format(cfg.train.load_path))
+            # load both branches
             else:
-                raise FileNotFoundError("===> no checkpoint found at '{}'".format(cfg.train.load_path))
+                load_path_gr, load_path_sa = cfg.train.load_path.split(',')
+                if isfile(load_path_gr) and isfile(load_path_sa):
+                    logger.info("loading branch weights separately '{}'".format(cfg.train.load_path))
+                    ckpt_gr = torch.load(load_path_gr, map_location=lambda storage, loc: storage)
+                    ckpt_sa = torch.load(load_path_sa, map_location=lambda storage, loc: storage)
+                    model = get_model(cfg.model)
+                    load_branch(model, ckpt_gr, branch='gr')
+                    load_branch(model, ckpt_sa, branch='sa')
+                    # NOTE For debug, check if params are loaded
+                    # p1 = next(iter(model.model_gr.backbone.parameters()))
+                    # p2 = model_gr['state_dict']['backbone.0.weight']
+                    logger.info("loaded branch weights separately '{}'".format(cfg.train.load_path))
+                else:
+                    raise FileNotFoundError("no checkpoint found at '{}'".format(cfg.train.load_path))
+        # model itself / contrastive learning pretrained model (shared)
+        #! not updated with mocov2 yet
         else:
             if isfile(cfg.train.load_path):                    
-                logger.info("===> loading model weights '{}'".format(cfg.train.load_path))
+                logger.info("loading model weights '{}'".format(cfg.train.load_path))
                 ckpt = torch.load(cfg.train.load_path, map_location=lambda storage, loc: storage)
                 model = get_model(cfg.model)
                 if cfg.train.load_only_backbone:
-                    model.features_gr.load_state_dict({k[12:] : v for k, v in ckpt['state_dict'].items() if k.startswith('features_gr.')}, strict=True)
-                    model.features_sa.load_state_dict({k[12:] : v for k, v in ckpt['state_dict'].items() if k.startswith('features_sa.')}, strict=True)
+                    # contrastive learning pretrained model (shared)
+                    # model.features_gr.load_state_dict({k[12:] : v for k, v in ckpt['state_dict'].items() if k.startswith('features_gr.')}, strict=True)
+                    # model.features_sa.load_state_dict({k[12:] : v for k, v in ckpt['state_dict'].items() if k.startswith('features_sa.')}, strict=True)
+                    # contrastive learning downloaded resnet50 model
+                    model.features_gr.load_state_dict({k[15:] : v for k, v in ckpt['state_dict'].items() if k.startswith('module.encoder.') and not k.startswith('module.encoder.fc.')}, strict=True)
+                    model.features_sa.load_state_dict({k[15:] : v for k, v in ckpt['state_dict'].items() if k.startswith('module.encoder.') and not k.startswith('module.encoder.fc.')}, strict=True)
+                # model itself
                 else:
                     model.load_state_dict(ckpt['state_dict'], strict=True)
-                logger.info("===> loaded model weights '{}'".format(cfg.train.load_path))
+                logger.info("loaded model weights '{}'".format(cfg.train.load_path))
             else:
-                raise FileNotFoundError("===> no checkpoint found at '{}'".format(cfg.train.load_path))
+                raise FileNotFoundError("no checkpoint found at '{}'".format(cfg.train.load_path))
 
     elif cfg.train.resume_path: # if already started training earlier and continuing
         if isfile(cfg.train.resume_path):
-            logger.info("===> loading checkpoint '{}'".format(cfg.train.resume_path))
+            logger.info("loading checkpoint '{}'".format(cfg.train.resume_path))
             ckpt = torch.load(cfg.train.resume_path, map_location=lambda storage, loc: storage)
             model = get_model(cfg.model)
             model.load_state_dict(ckpt['state_dict'], strict=True)
             cfg.train.start_epoch = ckpt['epoch']
-            logger.info("===> loaded checkpoint '{}'".format(cfg.train.resume_path))
+            logger.info("loaded checkpoint '{}'".format(cfg.train.resume_path))
         else:
-            raise FileNotFoundError("===> no checkpoint found at '{}'".format(cfg.train.resume_path))
+            raise FileNotFoundError("no checkpoint found at '{}'".format(cfg.train.resume_path))
     else: # if not, assume fresh training instance and will initially generate cluster centroids
         model = get_model(cfg.model)
 
@@ -185,16 +241,61 @@ def get_model_with_ckpt(cfg, logger):
 
 
 def get_dataset(cfg, logger):
-    tf = input_transform
-    if cfg.dataset.name == 'cvact':
-        dataloader = CVACTDataset
-    elif cfg.dataset.name == 'vigor':
-        dataloader = VIGORDataloader(
-            cfg.dataset.dataset_root_dir, transform=tf, logger=logger, version=cfg.dataset.version)
+    if cfg.model.name == 'cvm':
+        tf = input_transform
+        if cfg.dataset.name == 'cvact':
+            raise NotImplementedError
+        elif cfg.dataset.name == 'vigor':
+            train_set = VIGORDataset(cfg.dataset.dataset_root_dir, 'train', transform=tf, logger=logger, version=cfg.dataset.version)
+            train_bsampler = NonOverlapBatchSampler(
+                RandomSampler(train_set), 
+                train_set.grd_sat_label, 
+                batch_size=cfg.train.batch_size, 
+                drop_last=False
+            )
+            train_loader = DataLoader(dataset=train_set, 
+                num_workers=cfg.dataset.n_workers, 
+                batch_sampler=train_bsampler, 
+                pin_memory=True
+            )
+            val_set = VIGORDataset(cfg.dataset.dataset_root_dir, 'val', transform=tf, logger=logger, version=cfg.dataset.version)
+            val_set_queries_grd = ImagesFromList(val_set.grd_list, val_set.grd_size, tf)
+            val_set_queries_sat = ImagesFromList(val_set.sat_list, val_set.sat_size, tf)
+            opt = {
+                'batch_size': cfg.train.batch_size, 
+                'shuffle': False, 
+                'num_workers': cfg.dataset.n_workers, 
+                'pin_memory': True, 
+            }
+            val_loader_queries_grd = DataLoader(dataset=val_set_queries_grd, **opt)
+            val_loader_queries_sat = DataLoader(dataset=val_set_queries_sat, **opt)
+        else:
+            raise NotImplementedError
+        return train_set, train_loader, val_set, val_set_queries_grd, val_set_queries_sat, \
+                                                        val_loader_queries_grd, val_loader_queries_sat
+    elif cfg.model.name == 'simsiam':
+        tf = SimSiamTransform
+        if cfg.dataset.name == 'cvact':
+            raise NotImplementedError
+        elif cfg.dataset.name == 'vigor':
+            train_set = VIGORDataset(cfg.dataset.dataset_root_dir, 'train', transform=tf, logger=logger, version=cfg.dataset.version)
+            train_set_queries_grd = ImagesFromList(train_set.grd_list, train_set.grd_size, tf)
+            train_set_queries_sat = ImagesFromList(train_set.sat_list, train_set.sat_size, tf)
+            opt = {
+                'num_workers': cfg.dataset.n_workers, 
+                'batch_size': cfg.train.batch_size, 
+                'shuffle': True, 
+                'pin_memory': True,
+                'drop_last': True
+            }
+            train_loader_queries_grd = DataLoader(dataset=train_set_queries_grd, **opt)
+            train_loader_queries_sat = DataLoader(dataset=train_set_queries_sat, **opt)        
+            return train_set, train_set_queries_grd, train_set_queries_sat, \
+                                        train_loader_queries_grd, train_loader_queries_sat
+        else:
+            raise NotImplementedError
     else:
         raise NotImplementedError
-    return dataloader
-    
 
 def backward_hook(module, grad_in, grad_out, grad_list):
     grad_list.append(grad_out[0].detach())
@@ -217,9 +318,9 @@ def gen_cam(fmp, grad):
     for b in range(B):
         for c in range(C):
             cam[b] += weights[b, c] * fmp[b, c, :, :]
-    # cam = np.maximum(cam, 0) # relu
-    # cam -= np.min(cam, axis=0)
-    # cam /= np.max(cam, axis=0)
+    cam = np.maximum(cam, 0) # relu
+    cam -= np.min(cam, axis=0)
+    cam /= np.max(cam, axis=0)
     return cam
 
 

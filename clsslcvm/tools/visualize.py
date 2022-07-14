@@ -10,6 +10,7 @@ from clsslcvm import PACKAGE_ROOT_DIR
 from os.path import join
 import sys
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from clsslcvm.loss import uniform_loss
 from clsslcvm.tools.vonmiseskde import VonMisesKDE
@@ -21,7 +22,7 @@ def denormalize(im):
 	return im
 
 
-def visualize_assets(*assets, mode='image', max_nrows=6, dcn=True, caption='Batch images', **meta):
+def visualize_assets(*assets, mode='image', max_nrows=2, dcn=True, caption='Batch images', **meta):
 	B = assets[0].shape[0]
 	if mode == 'descriptor': 
 		C = assets[0].shape[1]
@@ -35,7 +36,7 @@ def visualize_assets(*assets, mode='image', max_nrows=6, dcn=True, caption='Batc
 	ncols = len(assets)
 	assets = [x.detach().cpu().numpy() for x in assets] if dcn else assets
 
-	fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(10,10 * nrows / 2))
+	fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(10,8))
 	fig.suptitle(caption, fontsize=12)
 	fig.tight_layout()
 	fig.subplots_adjust(top=0.9)
@@ -165,17 +166,33 @@ def visualize_dataloader_interact(training_loader):
 	widgets.VBox([button,out])
 
 
-def visualize_featdist(qFeat_gr, qFeat_sa, caption):
+def visualize_featdist(qFeat_gr, qFeat_sa, caption, mode='tsne', save_path='', model=None):
 	'''	Visualize desciptor dsitribution using t-SNE. Polar coords & vMF KDE is applied'''
-	fig, axes = plt.subplots(nrows=1, ncols=3)
+	fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(16,8))
 	fig.suptitle(caption, fontsize=8)
 	fig.tight_layout()
 	
 	n_gr, n_sa = qFeat_gr.shape[0], qFeat_sa.shape[0]
 	feat = np.concatenate([qFeat_gr, qFeat_sa], axis=0)
-	X_embedded = TSNE(n_components=2, learning_rate='auto', init='random').fit_transform(feat)
+	if mode == 'tsne':
+		assert(model is None)
+		X_embedded = TSNE(n_components=2, learning_rate='auto', init='random').fit_transform(feat)
+	elif mode == 'pca':
+		if model is None:
+			pca = PCA(n_components=2)
+			X_embedded = pca.fit_transform(feat)
+		else:
+			X_embedded = model.transform(feat)
+	else:
+		raise NotImplementedError
+	# axes[0].scatter(X_embedded[0:1, 0], X_embedded[0:1, 1], c='g', s=300, alpha=1)
+	# axes[0].scatter(X_embedded[1:n_gr, 0], X_embedded[1:n_gr, 1], c='r', alpha=0.4)
+	# axes[0].scatter(X_embedded[n_gr:n_gr+1, 0], X_embedded[n_gr:n_gr+1, 1], c='y', s=300, alpha=1)
+	# axes[0].scatter(X_embedded[n_gr+1:, 0], X_embedded[n_gr+1:, 1], c='b', alpha=0.4)
+
 	axes[0].scatter(X_embedded[:n_gr, 0], X_embedded[:n_gr, 1], c='r', alpha=0.4)
 	axes[0].scatter(X_embedded[n_gr:, 0], X_embedded[n_gr:, 1], c='b', alpha=0.4)
+
 	# axes[0].set_xlim(-50, 50)
 	# axes[0].set_ylim(-50, 50)
 	axes[0].set_title('2-d descriptors after t-SNE', fontsize=8)
@@ -199,4 +216,70 @@ def visualize_featdist(qFeat_gr, qFeat_sa, caption):
 	axes[2].set_ylim(0, 1)
 	axes[2].set_title('von Mises-Fisher (vMF) kernel density estimation (KDE) on angles', fontsize=8)
 
-	plt.show()
+	if save_path != '':
+		plt.savefig(save_path)
+		plt.close(fig)
+	else:
+		plt.show()
+
+
+def visualize_featdistv2(qFeat_gr, qFeat_sa, caption, mode='tsne', save_path='', model=None):
+	'''	Visualize desciptor dsitribution using t-SNE. Polar coords & vMF KDE is applied'''
+	fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(16,8))
+	fig.suptitle(caption, fontsize=8)
+	fig.tight_layout()
+	
+	n_gr, n_sa = qFeat_gr.shape[0], qFeat_sa.shape[0]
+	if mode == 'tsne':
+		assert(model is None)
+		X_embedded_gr = TSNE(n_components=2, learning_rate='auto', init='random').fit_transform(qFeat_gr)
+		X_embedded_sa = TSNE(n_components=2, learning_rate='auto', init='random').fit_transform(qFeat_sa)
+	elif mode == 'pca':
+		if model is None:
+			pca_gr = PCA(n_components=2)
+			pca_sa = PCA(n_components=2)
+			X_embedded_gr = pca_gr.fit_transform(qFeat_gr)
+			X_embedded_sa = pca_sa.fit_transform(qFeat_sa)
+		else:
+			X_embedded_gr = model[0].transform(qFeat_gr)
+			X_embedded_sa = model[1].transform(qFeat_sa)
+	else:
+		raise NotImplementedError
+	X_embedded = np.concatenate([X_embedded_gr, X_embedded_sa], axis=0)
+	
+	# axes[0].scatter(X_embedded[0:1, 0], X_embedded[0:1, 1], c='g', s=300, alpha=1)
+	# axes[0].scatter(X_embedded[1:n_gr, 0], X_embedded[1:n_gr, 1], c='r', alpha=0.4)
+	# axes[0].scatter(X_embedded[n_gr:n_gr+1, 0], X_embedded[n_gr:n_gr+1, 1], c='y', s=300, alpha=1)
+	# axes[0].scatter(X_embedded[n_gr+1:, 0], X_embedded[n_gr+1:, 1], c='b', alpha=0.4)
+
+	axes[0].scatter(X_embedded[:n_gr, 0], X_embedded[:n_gr, 1], c='r', alpha=0.4)
+	axes[0].scatter(X_embedded[n_gr:, 0], X_embedded[n_gr:, 1], c='b', alpha=0.4)
+
+	# axes[0].set_xlim(-50, 50)
+	# axes[0].set_ylim(-50, 50)
+	axes[0].set_title('2-d descriptors after t-SNE', fontsize=8)
+
+	X_embedded = X_embedded / np.linalg.norm(X_embedded, ord=2, axis=1)[:, np.newaxis]
+	X_polar = np.arctan2(X_embedded[:, 1], X_embedded[:, 0])
+	axes[1].scatter(np.cos(X_polar[:n_gr]), np.sin(X_polar[:n_gr]), c='r', marker='o', alpha=0.05)
+	axes[1].scatter(np.cos(X_polar[n_gr:]), np.sin(X_polar[n_gr:]), c='b', marker='o', alpha=0.05)
+	axes[1].set_xlim(-1.1, 1.1)
+	axes[1].set_ylim(-1.1, 1.1)
+	axes[1].set_title('2-d descriptors after t-SNE in polar coordinates', fontsize=8)
+	
+	test_x = np.linspace(-np.pi, np.pi, 100)
+	kde = VonMisesKDE(X_polar, kappa=25)
+	axes[2].plot(test_x, kde.evaluate(test_x), zorder=20, c='g')
+	kde = VonMisesKDE(X_polar[:n_gr], kappa=25)
+	axes[2].plot(test_x, kde.evaluate(test_x), zorder=20, c='r', alpha=0.5)
+	kde = VonMisesKDE(X_polar[n_gr:], kappa=25)
+	axes[2].plot(test_x, kde.evaluate(test_x), zorder=20, c='b', alpha=0.5)
+	axes[2].set_xlim(-np.pi, np.pi)
+	axes[2].set_ylim(0, 1)
+	axes[2].set_title('von Mises-Fisher (vMF) kernel density estimation (KDE) on angles', fontsize=8)
+
+	if save_path != '':
+		plt.savefig(save_path)
+		plt.close(fig)
+	else:
+		plt.show()

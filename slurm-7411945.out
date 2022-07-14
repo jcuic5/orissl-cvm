@@ -1,0 +1,941 @@
+2022-07-14 00:01:51 | INFO     | __main__:48 - **********************Config file**********************
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:150 - 
+cfg.dataset = edict()
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.dataset.name: vigor
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.dataset.dataset_root_dir: data/VIGOR
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.dataset.version: newfull
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.dataset.n_workers: 32
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:150 - 
+cfg.model = edict()
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.model.name: cvm
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.model.backbone: vgg16
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.model.pool: fc
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.model.imagenet: True
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:150 - 
+cfg.train = edict()
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.seed: 42
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.batch_size: 96
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.n_epochs: 150
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.start_epoch: 0
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.eval_every: 3
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.patience: 0
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.save_every_epoch: True
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.threads: 2
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.gpu_ids: 0
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.n_gpu: 1
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.slurm: True
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.save_path: work_dirs
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.resume_path: 
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.load_path: assets/pretrained_models/[mocov2_imagenet_sat_train_200e]_checkpoint_0199.pth.tar
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.load_sep_branch: True
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.load_sep_branch_single: sa
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.load_only_backbone: False
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.train_as_val: False
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.only_val: False
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.start_with_val: True
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.grad_cam: False
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.check_align_and_uniform: True
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.train.extra_identifier: 
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:150 - 
+cfg.hyperparams = edict()
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.optim: adam
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.weight_decay: 0.001
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.momentum: 0.9
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.lr: 0.0001
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.lr_step: 5
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.lr_gamma: 0.5
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.margin: 0.1
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:153 - cfg.identifier: cvm_vgg16_fc_vigor_newfull
+2022-07-14 00:01:51 | INFO     | __main__:50 - **********************Settings**********************
+2022-07-14 00:01:51 | INFO     | __main__:63 - torch.cuda.device_count(): 1
+2022-07-14 00:01:51 | INFO     | __main__:64 - torch.cuda.current_device(): 0
+2022-07-14 00:01:51 | INFO     | __main__:73 - ===> Building model
+2022-07-14 00:01:51 | INFO     | clsslcvm.tools:182 - loading model weights 'assets/pretrained_models/[mocov2_imagenet_sat_train_200e]_checkpoint_0199.pth.tar'
+2022-07-14 00:02:00 | INFO     | clsslcvm.tools:189 - loaded model weights 'assets/pretrained_models/[mocov2_imagenet_sat_train_200e]_checkpoint_0199.pth.tar'
+2022-07-14 00:02:02 | INFO     | __main__:96 - CVMModelv2(
+  (features_gr): Sequential(
+    (0): Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (1): ReLU(inplace=True)
+    (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (3): ReLU(inplace=True)
+    (4): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (5): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (6): ReLU(inplace=True)
+    (7): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (8): ReLU(inplace=True)
+    (9): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (10): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (11): ReLU(inplace=True)
+    (12): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (13): ReLU(inplace=True)
+    (14): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (15): ReLU(inplace=True)
+    (16): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (17): Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (18): ReLU(inplace=True)
+    (19): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (20): ReLU(inplace=True)
+    (21): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (22): ReLU(inplace=True)
+    (23): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (24): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (25): ReLU(inplace=True)
+    (26): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (27): ReLU(inplace=True)
+    (28): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (29): ReLU(inplace=True)
+    (30): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+  )
+  (features_sa): Sequential(
+    (0): Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (1): ReLU(inplace=True)
+    (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (3): ReLU(inplace=True)
+    (4): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (5): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (6): ReLU(inplace=True)
+    (7): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (8): ReLU(inplace=True)
+    (9): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (10): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (11): ReLU(inplace=True)
+    (12): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (13): ReLU(inplace=True)
+    (14): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (15): ReLU(inplace=True)
+    (16): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (17): Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (18): ReLU(inplace=True)
+    (19): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (20): ReLU(inplace=True)
+    (21): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (22): ReLU(inplace=True)
+    (23): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (24): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (25): ReLU(inplace=True)
+    (26): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (27): ReLU(inplace=True)
+    (28): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (29): ReLU(inplace=True)
+    (30): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+  )
+  (pool): Sequential(
+    (0): AdaptiveAvgPool2d(output_size=(1, 1))
+    (1): Flatten(start_dim=1, end_dim=-1)
+    (2): Linear(in_features=512, out_features=4096, bias=True)
+    (3): L2Norm()
+  )
+)
+2022-07-14 00:02:02 | INFO     | __main__:108 - ===> Loading dataset(s)
+2022-07-14 00:02:02 | INFO     | clsslcvm.datasets.vigor_dataset:77 - VIGOR dataset: load data/VIGOR/splits_newfull/NewYork/satellite_list.txt: 23279
+2022-07-14 00:02:02 | INFO     | clsslcvm.datasets.vigor_dataset:77 - VIGOR dataset: load data/VIGOR/splits_newfull/Seattle/satellite_list.txt: 44055
+2022-07-14 00:02:02 | INFO     | clsslcvm.datasets.vigor_dataset:80 - train sat loaded, data size:44055
+2022-07-14 00:02:03 | INFO     | clsslcvm.datasets.vigor_dataset:107 - VIGOR dataset: load data/VIGOR/splits_newfull/NewYork/pano_label_balanced.txt: 27769
+2022-07-14 00:02:03 | INFO     | clsslcvm.datasets.vigor_dataset:107 - VIGOR dataset: load data/VIGOR/splits_newfull/Seattle/pano_label_balanced.txt: 51520
+2022-07-14 00:02:03 | INFO     | clsslcvm.datasets.vigor_dataset:111 - train grd loaded, data_size: 51520
+2022-07-14 00:02:03 | INFO     | clsslcvm.datasets.vigor_dataset:77 - VIGOR dataset: load data/VIGOR/splits_newfull/SanFrancisco/satellite_list.txt: 24255
+2022-07-14 00:02:03 | INFO     | clsslcvm.datasets.vigor_dataset:77 - VIGOR dataset: load data/VIGOR/splits_newfull/Chicago/satellite_list.txt: 46563
+2022-07-14 00:02:03 | INFO     | clsslcvm.datasets.vigor_dataset:80 - val sat loaded, data size:46563
+2022-07-14 00:02:04 | INFO     | clsslcvm.datasets.vigor_dataset:107 - VIGOR dataset: load data/VIGOR/splits_newfull/SanFrancisco/pano_label_balanced.txt: 28215
+2022-07-14 00:02:05 | INFO     | clsslcvm.datasets.vigor_dataset:107 - VIGOR dataset: load data/VIGOR/splits_newfull/Chicago/pano_label_balanced.txt: 53694
+2022-07-14 00:02:05 | INFO     | clsslcvm.datasets.vigor_dataset:111 - val grd loaded, data_size: 53694
+2022-07-14 00:02:05 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 00:02:05 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 00:03:07 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[0](112/560): indices 10656 to 10751 extracted
+2022-07-14 00:03:52 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[0](224/560): indices 21408 to 21503 extracted
+2022-07-14 00:04:37 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[0](336/560): indices 32160 to 32255 extracted
+2022-07-14 00:05:21 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[0](448/560): indices 42912 to 43007 extracted
+2022-07-14 00:06:06 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[0](560/560): indices 53664 to 53693 extracted
+2022-07-14 00:06:06 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 00:06:39 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[0](97/486): indices 9216 to 9311 extracted
+2022-07-14 00:06:59 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[0](194/486): indices 18528 to 18623 extracted
+2022-07-14 00:07:19 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[0](291/486): indices 27840 to 27935 extracted
+2022-07-14 00:07:39 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[0](388/486): indices 37152 to 37247 extracted
+2022-07-14 00:07:59 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[0](485/486): indices 46464 to 46559 extracted
+2022-07-14 00:07:59 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 00:08:20 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 0: accuracy = 3.1% , top1: 0.0%, top5: 0.1%, hit_rate: 0.0%
+2022-07-14 00:08:24 | INFO     | __main__:165 - Allocated: 122.03 MB, Cached: 15.31 GB
+2022-07-14 00:08:24 | INFO     | __main__:168 - **********************Start training**********************
+2022-07-14 00:09:07 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 00:09:07 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[1](0/537): Loss: 0.7470, Align loss: 0.0144, Uniform loss: -1.1234
+2022-07-14 00:12:52 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[1](107/537): Loss: 0.1009, Align loss: 0.0069, Uniform loss: -2.1608
+2022-07-14 00:16:34 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[1](214/537): Loss: 0.0515, Align loss: 0.0070, Uniform loss: -2.5191
+2022-07-14 00:20:16 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[1](321/537): Loss: 0.0295, Align loss: 0.0067, Uniform loss: -2.7832
+2022-07-14 00:23:58 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[1](428/537): Loss: 0.0307, Align loss: 0.0063, Uniform loss: -2.8632
+2022-07-14 00:27:36 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[1](535/537): Loss: 0.0253, Align loss: 0.0063, Uniform loss: -2.8997
+2022-07-14 00:27:37 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 1 Complete: Avg. Loss: 0.0646, Align loss: 0.0071, Uniform loss: -2.5237
+2022-07-14 00:27:59 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 00:27:59 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[2](0/537): Loss: 0.0254, Align loss: 0.0063, Uniform loss: -2.9819
+2022-07-14 00:31:40 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[2](107/537): Loss: 0.0262, Align loss: 0.0070, Uniform loss: -3.1583
+2022-07-14 00:35:21 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[2](214/537): Loss: 0.0244, Align loss: 0.0068, Uniform loss: -3.2253
+2022-07-14 00:39:03 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[2](321/537): Loss: 0.0161, Align loss: 0.0065, Uniform loss: -3.2467
+2022-07-14 00:42:44 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[2](428/537): Loss: 0.0208, Align loss: 0.0069, Uniform loss: -3.2600
+2022-07-14 00:46:22 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[2](535/537): Loss: 0.0190, Align loss: 0.0069, Uniform loss: -3.3760
+2022-07-14 00:46:24 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 2 Complete: Avg. Loss: 0.0210, Align loss: 0.0066, Uniform loss: -3.1995
+2022-07-14 00:46:45 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 00:46:45 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[3](0/537): Loss: 0.0169, Align loss: 0.0069, Uniform loss: -3.2789
+2022-07-14 00:50:26 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[3](107/537): Loss: 0.0127, Align loss: 0.0061, Uniform loss: -3.4655
+2022-07-14 00:54:07 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[3](214/537): Loss: 0.0149, Align loss: 0.0069, Uniform loss: -3.5435
+2022-07-14 00:57:49 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[3](321/537): Loss: 0.0168, Align loss: 0.0064, Uniform loss: -3.4767
+2022-07-14 01:01:30 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[3](428/537): Loss: 0.0169, Align loss: 0.0068, Uniform loss: -3.4485
+2022-07-14 01:05:08 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[3](535/537): Loss: 0.0141, Align loss: 0.0069, Uniform loss: -3.4762
+2022-07-14 01:05:10 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 3 Complete: Avg. Loss: 0.0141, Align loss: 0.0065, Uniform loss: -3.4534
+2022-07-14 01:05:10 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 01:05:10 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 01:06:05 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[3](112/560): indices 10656 to 10751 extracted
+2022-07-14 01:06:50 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[3](224/560): indices 21408 to 21503 extracted
+2022-07-14 01:07:39 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[3](336/560): indices 32160 to 32255 extracted
+2022-07-14 01:08:31 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[3](448/560): indices 42912 to 43007 extracted
+2022-07-14 01:09:28 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[3](560/560): indices 53664 to 53693 extracted
+2022-07-14 01:09:29 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 01:09:58 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[3](97/486): indices 9216 to 9311 extracted
+2022-07-14 01:10:27 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[3](194/486): indices 18528 to 18623 extracted
+2022-07-14 01:10:51 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[3](291/486): indices 27840 to 27935 extracted
+2022-07-14 01:11:13 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[3](388/486): indices 37152 to 37247 extracted
+2022-07-14 01:11:35 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[3](485/486): indices 46464 to 46559 extracted
+2022-07-14 01:11:35 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 01:12:01 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 3: accuracy = 57.4% , top1: 1.4%, top5: 4.7%, hit_rate: 1.6%
+2022-07-14 01:12:35 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 01:12:35 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[4](0/537): Loss: 0.0129, Align loss: 0.0066, Uniform loss: -3.4850
+2022-07-14 01:16:18 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[4](107/537): Loss: 0.0126, Align loss: 0.0068, Uniform loss: -3.5717
+2022-07-14 01:20:00 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[4](214/537): Loss: 0.0120, Align loss: 0.0067, Uniform loss: -3.5802
+2022-07-14 01:23:41 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[4](321/537): Loss: 0.0119, Align loss: 0.0065, Uniform loss: -3.5497
+2022-07-14 01:27:23 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[4](428/537): Loss: 0.0114, Align loss: 0.0067, Uniform loss: -3.5715
+2022-07-14 01:31:01 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[4](535/537): Loss: 0.0112, Align loss: 0.0068, Uniform loss: -3.5838
+2022-07-14 01:31:03 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 4 Complete: Avg. Loss: 0.0114, Align loss: 0.0065, Uniform loss: -3.5813
+2022-07-14 01:31:25 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 01:31:25 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[5](0/537): Loss: 0.0102, Align loss: 0.0065, Uniform loss: -3.6117
+2022-07-14 01:35:06 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[5](107/537): Loss: 0.0108, Align loss: 0.0067, Uniform loss: -3.6574
+2022-07-14 01:38:47 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[5](214/537): Loss: 0.0106, Align loss: 0.0067, Uniform loss: -3.6377
+2022-07-14 01:42:29 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[5](321/537): Loss: 0.0105, Align loss: 0.0066, Uniform loss: -3.6668
+2022-07-14 01:46:10 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[5](428/537): Loss: 0.0097, Align loss: 0.0067, Uniform loss: -3.7040
+2022-07-14 01:49:48 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[5](535/537): Loss: 0.0101, Align loss: 0.0067, Uniform loss: -3.6559
+2022-07-14 01:49:49 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 5 Complete: Avg. Loss: 0.0102, Align loss: 0.0066, Uniform loss: -3.6429
+2022-07-14 01:50:11 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 01:50:11 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[6](0/537): Loss: 0.0097, Align loss: 0.0066, Uniform loss: -3.6773
+2022-07-14 01:53:52 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[6](107/537): Loss: 0.0095, Align loss: 0.0065, Uniform loss: -3.6760
+2022-07-14 01:57:33 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[6](214/537): Loss: 0.0098, Align loss: 0.0068, Uniform loss: -3.6805
+2022-07-14 02:01:15 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[6](321/537): Loss: 0.0092, Align loss: 0.0069, Uniform loss: -3.6545
+2022-07-14 02:04:56 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[6](428/537): Loss: 0.0097, Align loss: 0.0066, Uniform loss: -3.7176
+2022-07-14 02:08:34 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[6](535/537): Loss: 0.0096, Align loss: 0.0067, Uniform loss: -3.6487
+2022-07-14 02:08:36 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 6 Complete: Avg. Loss: 0.0095, Align loss: 0.0066, Uniform loss: -3.6761
+2022-07-14 02:08:36 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 02:08:36 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 02:10:15 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[6](112/560): indices 10656 to 10751 extracted
+2022-07-14 02:11:08 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[6](224/560): indices 21408 to 21503 extracted
+2022-07-14 02:12:05 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[6](336/560): indices 32160 to 32255 extracted
+2022-07-14 02:13:01 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[6](448/560): indices 42912 to 43007 extracted
+2022-07-14 02:14:04 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[6](560/560): indices 53664 to 53693 extracted
+2022-07-14 02:14:05 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 02:14:53 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[6](97/486): indices 9216 to 9311 extracted
+2022-07-14 02:15:30 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[6](194/486): indices 18528 to 18623 extracted
+2022-07-14 02:16:03 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[6](291/486): indices 27840 to 27935 extracted
+2022-07-14 02:16:32 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[6](388/486): indices 37152 to 37247 extracted
+2022-07-14 02:17:03 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[6](485/486): indices 46464 to 46559 extracted
+2022-07-14 02:17:03 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 02:17:31 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 6: accuracy = 62.1% , top1: 1.9%, top5: 6.3%, hit_rate: 2.1%
+2022-07-14 02:18:02 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 02:18:02 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[7](0/537): Loss: 0.0096, Align loss: 0.0069, Uniform loss: -3.6498
+2022-07-14 02:21:45 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[7](107/537): Loss: 0.0095, Align loss: 0.0068, Uniform loss: -3.7018
+2022-07-14 02:25:27 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[7](214/537): Loss: 0.0089, Align loss: 0.0066, Uniform loss: -3.7277
+2022-07-14 02:29:09 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[7](321/537): Loss: 0.0087, Align loss: 0.0064, Uniform loss: -3.6750
+2022-07-14 02:32:50 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[7](428/537): Loss: 0.0091, Align loss: 0.0065, Uniform loss: -3.7463
+2022-07-14 02:36:28 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[7](535/537): Loss: 0.0094, Align loss: 0.0067, Uniform loss: -3.6509
+2022-07-14 02:36:30 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 7 Complete: Avg. Loss: 0.0092, Align loss: 0.0067, Uniform loss: -3.6934
+2022-07-14 02:36:51 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 02:36:51 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[8](0/537): Loss: 0.0091, Align loss: 0.0065, Uniform loss: -3.5826
+2022-07-14 02:40:32 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[8](107/537): Loss: 0.0084, Align loss: 0.0064, Uniform loss: -3.7241
+2022-07-14 02:44:14 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[8](214/537): Loss: 0.0089, Align loss: 0.0069, Uniform loss: -3.7495
+2022-07-14 02:47:55 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[8](321/537): Loss: 0.0088, Align loss: 0.0065, Uniform loss: -3.7369
+2022-07-14 02:51:36 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[8](428/537): Loss: 0.0093, Align loss: 0.0066, Uniform loss: -3.6611
+2022-07-14 02:55:14 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[8](535/537): Loss: 0.0093, Align loss: 0.0068, Uniform loss: -3.6990
+2022-07-14 02:55:16 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 8 Complete: Avg. Loss: 0.0088, Align loss: 0.0067, Uniform loss: -3.7053
+2022-07-14 02:55:38 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 02:55:38 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[9](0/537): Loss: 0.0093, Align loss: 0.0066, Uniform loss: -3.7060
+2022-07-14 02:59:19 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[9](107/537): Loss: 0.0090, Align loss: 0.0067, Uniform loss: -3.7359
+2022-07-14 03:03:00 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[9](214/537): Loss: 0.0089, Align loss: 0.0068, Uniform loss: -3.6990
+2022-07-14 03:06:41 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[9](321/537): Loss: 0.0085, Align loss: 0.0066, Uniform loss: -3.6839
+2022-07-14 03:10:22 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[9](428/537): Loss: 0.0096, Align loss: 0.0069, Uniform loss: -3.7157
+2022-07-14 03:14:00 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[9](535/537): Loss: 0.0083, Align loss: 0.0066, Uniform loss: -3.7171
+2022-07-14 03:14:02 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 9 Complete: Avg. Loss: 0.0088, Align loss: 0.0068, Uniform loss: -3.7049
+2022-07-14 03:14:02 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 03:14:03 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 03:15:09 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[9](112/560): indices 10656 to 10751 extracted
+2022-07-14 03:16:02 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[9](224/560): indices 21408 to 21503 extracted
+2022-07-14 03:16:58 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[9](336/560): indices 32160 to 32255 extracted
+2022-07-14 03:17:52 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[9](448/560): indices 42912 to 43007 extracted
+2022-07-14 03:18:47 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[9](560/560): indices 53664 to 53693 extracted
+2022-07-14 03:18:48 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 03:19:33 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[9](97/486): indices 9216 to 9311 extracted
+2022-07-14 03:20:06 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[9](194/486): indices 18528 to 18623 extracted
+2022-07-14 03:20:37 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[9](291/486): indices 27840 to 27935 extracted
+2022-07-14 03:21:03 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[9](388/486): indices 37152 to 37247 extracted
+2022-07-14 03:21:23 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[9](485/486): indices 46464 to 46559 extracted
+2022-07-14 03:21:23 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 03:21:47 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 9: accuracy = 65.6% , top1: 2.5%, top5: 8.4%, hit_rate: 2.9%
+2022-07-14 03:22:18 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 03:22:18 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[10](0/537): Loss: 0.0083, Align loss: 0.0065, Uniform loss: -3.7076
+2022-07-14 03:26:01 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[10](107/537): Loss: 0.0087, Align loss: 0.0066, Uniform loss: -3.7012
+2022-07-14 03:29:43 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[10](214/537): Loss: 0.0083, Align loss: 0.0070, Uniform loss: -3.7365
+2022-07-14 03:33:24 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[10](321/537): Loss: 0.0079, Align loss: 0.0066, Uniform loss: -3.7767
+2022-07-14 03:37:05 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[10](428/537): Loss: 0.0095, Align loss: 0.0069, Uniform loss: -3.6416
+2022-07-14 03:40:43 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[10](535/537): Loss: 0.0097, Align loss: 0.0074, Uniform loss: -3.6546
+2022-07-14 03:40:45 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 10 Complete: Avg. Loss: 0.0086, Align loss: 0.0067, Uniform loss: -3.7095
+2022-07-14 03:41:08 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 03:41:08 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[11](0/537): Loss: 0.0083, Align loss: 0.0066, Uniform loss: -3.7013
+2022-07-14 03:44:49 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[11](107/537): Loss: 0.0084, Align loss: 0.0069, Uniform loss: -3.7581
+2022-07-14 03:48:30 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[11](214/537): Loss: 0.0078, Align loss: 0.0065, Uniform loss: -3.7822
+2022-07-14 03:52:12 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[11](321/537): Loss: 0.0084, Align loss: 0.0070, Uniform loss: -3.6971
+2022-07-14 03:55:53 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[11](428/537): Loss: 0.0089, Align loss: 0.0072, Uniform loss: -3.6898
+2022-07-14 03:59:31 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[11](535/537): Loss: 0.0088, Align loss: 0.0071, Uniform loss: -3.7119
+2022-07-14 03:59:33 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 11 Complete: Avg. Loss: 0.0085, Align loss: 0.0067, Uniform loss: -3.7182
+2022-07-14 03:59:54 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 03:59:54 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[12](0/537): Loss: 0.0081, Align loss: 0.0066, Uniform loss: -3.6789
+2022-07-14 04:03:35 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[12](107/537): Loss: 0.0084, Align loss: 0.0065, Uniform loss: -3.7837
+2022-07-14 04:07:16 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[12](214/537): Loss: 0.0084, Align loss: 0.0065, Uniform loss: -3.7369
+2022-07-14 04:10:57 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[12](321/537): Loss: 0.0080, Align loss: 0.0067, Uniform loss: -3.7478
+2022-07-14 04:14:38 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[12](428/537): Loss: 0.0088, Align loss: 0.0069, Uniform loss: -3.7323
+2022-07-14 04:18:16 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[12](535/537): Loss: 0.0090, Align loss: 0.0074, Uniform loss: -3.6655
+2022-07-14 04:18:18 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 12 Complete: Avg. Loss: 0.0084, Align loss: 0.0067, Uniform loss: -3.7180
+2022-07-14 04:18:18 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 04:18:19 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 04:19:13 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[12](112/560): indices 10656 to 10751 extracted
+2022-07-14 04:19:58 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[12](224/560): indices 21408 to 21503 extracted
+2022-07-14 04:20:42 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[12](336/560): indices 32160 to 32255 extracted
+2022-07-14 04:21:27 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[12](448/560): indices 42912 to 43007 extracted
+2022-07-14 04:22:11 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[12](560/560): indices 53664 to 53693 extracted
+2022-07-14 04:22:12 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 04:22:39 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[12](97/486): indices 9216 to 9311 extracted
+2022-07-14 04:22:59 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[12](194/486): indices 18528 to 18623 extracted
+2022-07-14 04:23:19 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[12](291/486): indices 27840 to 27935 extracted
+2022-07-14 04:23:39 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[12](388/486): indices 37152 to 37247 extracted
+2022-07-14 04:23:59 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[12](485/486): indices 46464 to 46559 extracted
+2022-07-14 04:23:59 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 04:24:27 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 12: accuracy = 56.5% , top1: 1.6%, top5: 5.3%, hit_rate: 1.8%
+2022-07-14 04:24:55 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 04:24:55 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[13](0/537): Loss: 0.0088, Align loss: 0.0075, Uniform loss: -3.5666
+2022-07-14 04:28:37 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[13](107/537): Loss: 0.0081, Align loss: 0.0065, Uniform loss: -3.6822
+2022-07-14 04:32:18 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[13](214/537): Loss: 0.0087, Align loss: 0.0065, Uniform loss: -3.7015
+2022-07-14 04:35:59 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[13](321/537): Loss: 0.0081, Align loss: 0.0066, Uniform loss: -3.6624
+2022-07-14 04:39:41 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[13](428/537): Loss: 0.0084, Align loss: 0.0065, Uniform loss: -3.7813
+2022-07-14 04:43:19 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[13](535/537): Loss: 0.0087, Align loss: 0.0069, Uniform loss: -3.6759
+2022-07-14 04:43:20 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 13 Complete: Avg. Loss: 0.0084, Align loss: 0.0067, Uniform loss: -3.7140
+2022-07-14 04:43:41 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 04:43:41 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[14](0/537): Loss: 0.0085, Align loss: 0.0068, Uniform loss: -3.6808
+2022-07-14 04:47:22 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[14](107/537): Loss: 0.0076, Align loss: 0.0063, Uniform loss: -3.7579
+2022-07-14 04:51:04 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[14](214/537): Loss: 0.0079, Align loss: 0.0063, Uniform loss: -3.7614
+2022-07-14 04:54:45 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[14](321/537): Loss: 0.0076, Align loss: 0.0059, Uniform loss: -3.8077
+2022-07-14 04:58:26 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[14](428/537): Loss: 0.0078, Align loss: 0.0065, Uniform loss: -3.7405
+2022-07-14 05:02:04 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[14](535/537): Loss: 0.0079, Align loss: 0.0067, Uniform loss: -3.7511
+2022-07-14 05:02:05 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 14 Complete: Avg. Loss: 0.0080, Align loss: 0.0063, Uniform loss: -3.7598
+2022-07-14 05:02:26 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 05:02:26 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[15](0/537): Loss: 0.0079, Align loss: 0.0066, Uniform loss: -3.7289
+2022-07-14 05:06:07 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[15](107/537): Loss: 0.0078, Align loss: 0.0062, Uniform loss: -3.7448
+2022-07-14 05:09:48 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[15](214/537): Loss: 0.0080, Align loss: 0.0063, Uniform loss: -3.7777
+2022-07-14 05:13:29 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[15](321/537): Loss: 0.0080, Align loss: 0.0071, Uniform loss: -3.7011
+2022-07-14 05:17:10 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[15](428/537): Loss: 0.0094, Align loss: 0.0073, Uniform loss: -3.6756
+2022-07-14 05:20:48 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[15](535/537): Loss: 0.0107, Align loss: 0.0087, Uniform loss: -3.4943
+2022-07-14 05:20:49 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 15 Complete: Avg. Loss: 0.0081, Align loss: 0.0066, Uniform loss: -3.7347
+2022-07-14 05:20:50 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 05:20:50 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 05:21:45 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[15](112/560): indices 10656 to 10751 extracted
+2022-07-14 05:22:29 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[15](224/560): indices 21408 to 21503 extracted
+2022-07-14 05:23:14 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[15](336/560): indices 32160 to 32255 extracted
+2022-07-14 05:23:58 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[15](448/560): indices 42912 to 43007 extracted
+2022-07-14 05:24:42 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[15](560/560): indices 53664 to 53693 extracted
+2022-07-14 05:24:43 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 05:25:10 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[15](97/486): indices 9216 to 9311 extracted
+2022-07-14 05:25:30 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[15](194/486): indices 18528 to 18623 extracted
+2022-07-14 05:25:50 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[15](291/486): indices 27840 to 27935 extracted
+2022-07-14 05:26:10 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[15](388/486): indices 37152 to 37247 extracted
+2022-07-14 05:26:30 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[15](485/486): indices 46464 to 46559 extracted
+2022-07-14 05:26:30 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 05:26:58 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 15: accuracy = 58.9% , top1: 1.9%, top5: 6.0%, hit_rate: 2.0%
+2022-07-14 05:27:26 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 05:27:26 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[16](0/537): Loss: 0.0096, Align loss: 0.0080, Uniform loss: -3.4841
+2022-07-14 05:31:07 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[16](107/537): Loss: 0.0436, Align loss: 0.0058, Uniform loss: -2.6808
+2022-07-14 05:34:49 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[16](214/537): Loss: 0.0142, Align loss: 0.0054, Uniform loss: -3.3128
+2022-07-14 05:38:30 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[16](321/537): Loss: 0.0100, Align loss: 0.0055, Uniform loss: -3.4922
+2022-07-14 05:42:10 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[16](428/537): Loss: 0.0097, Align loss: 0.0056, Uniform loss: -3.6059
+2022-07-14 05:45:48 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[16](535/537): Loss: 0.0087, Align loss: 0.0053, Uniform loss: -3.6955
+2022-07-14 05:45:50 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 16 Complete: Avg. Loss: 0.0196, Align loss: 0.0059, Uniform loss: -3.2721
+2022-07-14 05:46:12 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 05:46:12 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[17](0/537): Loss: 0.0084, Align loss: 0.0051, Uniform loss: -3.6776
+2022-07-14 05:49:52 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[17](107/537): Loss: 0.0088, Align loss: 0.0053, Uniform loss: -3.7178
+2022-07-14 05:53:33 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[17](214/537): Loss: 0.0084, Align loss: 0.0052, Uniform loss: -3.7156
+2022-07-14 05:57:14 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[17](321/537): Loss: 0.0082, Align loss: 0.0049, Uniform loss: -3.7751
+2022-07-14 06:00:55 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[17](428/537): Loss: 0.0083, Align loss: 0.0051, Uniform loss: -3.7518
+2022-07-14 06:04:33 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[17](535/537): Loss: 0.0086, Align loss: 0.0054, Uniform loss: -3.7794
+2022-07-14 06:04:35 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 17 Complete: Avg. Loss: 0.0083, Align loss: 0.0052, Uniform loss: -3.7289
+2022-07-14 06:04:56 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 06:04:56 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[18](0/537): Loss: 0.0080, Align loss: 0.0053, Uniform loss: -3.7840
+2022-07-14 06:08:37 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[18](107/537): Loss: 0.0079, Align loss: 0.0052, Uniform loss: -3.8180
+2022-07-14 06:12:18 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[18](214/537): Loss: 0.0081, Align loss: 0.0050, Uniform loss: -3.7776
+2022-07-14 06:15:59 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[18](321/537): Loss: 0.0078, Align loss: 0.0052, Uniform loss: -3.7796
+2022-07-14 06:19:40 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[18](428/537): Loss: 0.0080, Align loss: 0.0054, Uniform loss: -3.7575
+2022-07-14 06:23:18 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[18](535/537): Loss: 0.0077, Align loss: 0.0052, Uniform loss: -3.7888
+2022-07-14 06:23:19 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 18 Complete: Avg. Loss: 0.0079, Align loss: 0.0052, Uniform loss: -3.7879
+2022-07-14 06:23:19 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 06:23:20 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 06:24:14 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[18](112/560): indices 10656 to 10751 extracted
+2022-07-14 06:24:59 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[18](224/560): indices 21408 to 21503 extracted
+2022-07-14 06:25:43 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[18](336/560): indices 32160 to 32255 extracted
+2022-07-14 06:26:27 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[18](448/560): indices 42912 to 43007 extracted
+2022-07-14 06:27:12 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[18](560/560): indices 53664 to 53693 extracted
+2022-07-14 06:27:12 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 06:27:39 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[18](97/486): indices 9216 to 9311 extracted
+2022-07-14 06:27:58 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[18](194/486): indices 18528 to 18623 extracted
+2022-07-14 06:28:18 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[18](291/486): indices 27840 to 27935 extracted
+2022-07-14 06:28:38 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[18](388/486): indices 37152 to 37247 extracted
+2022-07-14 06:28:58 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[18](485/486): indices 46464 to 46559 extracted
+2022-07-14 06:28:58 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 06:29:27 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 18: accuracy = 68.3% , top1: 3.5%, top5: 10.1%, hit_rate: 3.9%
+2022-07-14 06:29:56 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 06:29:56 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[19](0/537): Loss: 0.0077, Align loss: 0.0050, Uniform loss: -3.8206
+2022-07-14 06:33:37 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[19](107/537): Loss: 0.0080, Align loss: 0.0052, Uniform loss: -3.7691
+2022-07-14 06:37:19 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[19](214/537): Loss: 0.0077, Align loss: 0.0052, Uniform loss: -3.8083
+2022-07-14 06:41:00 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[19](321/537): Loss: 0.0078, Align loss: 0.0052, Uniform loss: -3.8184
+2022-07-14 06:44:40 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[19](428/537): Loss: 0.0080, Align loss: 0.0053, Uniform loss: -3.8008
+2022-07-14 06:48:18 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[19](535/537): Loss: 0.0076, Align loss: 0.0054, Uniform loss: -3.8308
+2022-07-14 06:48:19 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 19 Complete: Avg. Loss: 0.0078, Align loss: 0.0052, Uniform loss: -3.8074
+2022-07-14 06:48:42 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 06:48:42 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[20](0/537): Loss: 0.0077, Align loss: 0.0052, Uniform loss: -3.7953
+2022-07-14 06:52:22 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[20](107/537): Loss: 0.0076, Align loss: 0.0055, Uniform loss: -3.7967
+2022-07-14 06:56:03 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[20](214/537): Loss: 0.0075, Align loss: 0.0052, Uniform loss: -3.8338
+2022-07-14 06:59:44 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[20](321/537): Loss: 0.0077, Align loss: 0.0056, Uniform loss: -3.8497
+2022-07-14 07:03:25 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[20](428/537): Loss: 0.0076, Align loss: 0.0053, Uniform loss: -3.8079
+2022-07-14 07:07:02 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[20](535/537): Loss: 0.0077, Align loss: 0.0053, Uniform loss: -3.7843
+2022-07-14 07:07:04 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 20 Complete: Avg. Loss: 0.0077, Align loss: 0.0053, Uniform loss: -3.8172
+2022-07-14 07:07:25 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 07:07:25 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[21](0/537): Loss: 0.0076, Align loss: 0.0057, Uniform loss: -3.8213
+2022-07-14 07:11:05 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[21](107/537): Loss: 0.0077, Align loss: 0.0051, Uniform loss: -3.8137
+2022-07-14 07:14:46 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[21](214/537): Loss: 0.0076, Align loss: 0.0054, Uniform loss: -3.8213
+2022-07-14 07:18:27 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[21](321/537): Loss: 0.0075, Align loss: 0.0054, Uniform loss: -3.8183
+2022-07-14 07:22:08 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[21](428/537): Loss: 0.0079, Align loss: 0.0055, Uniform loss: -3.8009
+2022-07-14 07:25:46 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[21](535/537): Loss: 0.0075, Align loss: 0.0055, Uniform loss: -3.8088
+2022-07-14 07:25:47 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 21 Complete: Avg. Loss: 0.0077, Align loss: 0.0054, Uniform loss: -3.8177
+2022-07-14 07:25:47 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 07:25:48 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 07:26:42 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[21](112/560): indices 10656 to 10751 extracted
+2022-07-14 07:27:27 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[21](224/560): indices 21408 to 21503 extracted
+2022-07-14 07:28:11 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[21](336/560): indices 32160 to 32255 extracted
+2022-07-14 07:28:56 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[21](448/560): indices 42912 to 43007 extracted
+2022-07-14 07:29:40 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[21](560/560): indices 53664 to 53693 extracted
+2022-07-14 07:29:41 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 07:30:07 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[21](97/486): indices 9216 to 9311 extracted
+2022-07-14 07:30:27 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[21](194/486): indices 18528 to 18623 extracted
+2022-07-14 07:30:47 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[21](291/486): indices 27840 to 27935 extracted
+2022-07-14 07:31:07 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[21](388/486): indices 37152 to 37247 extracted
+2022-07-14 07:31:27 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[21](485/486): indices 46464 to 46559 extracted
+2022-07-14 07:31:27 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 07:31:51 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 21: accuracy = 67.4% , top1: 3.5%, top5: 9.9%, hit_rate: 3.9%
+2022-07-14 07:32:19 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 07:32:19 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[22](0/537): Loss: 0.0076, Align loss: 0.0054, Uniform loss: -3.8136
+2022-07-14 07:36:00 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[22](107/537): Loss: 0.0075, Align loss: 0.0056, Uniform loss: -3.8341
+2022-07-14 07:39:41 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[22](214/537): Loss: 0.0077, Align loss: 0.0052, Uniform loss: -3.8284
+2022-07-14 07:43:22 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[22](321/537): Loss: 0.0076, Align loss: 0.0057, Uniform loss: -3.8137
+2022-07-14 07:47:03 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[22](428/537): Loss: 0.0076, Align loss: 0.0052, Uniform loss: -3.8430
+2022-07-14 07:50:41 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[22](535/537): Loss: 0.0080, Align loss: 0.0060, Uniform loss: -3.7988
+2022-07-14 07:50:43 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 22 Complete: Avg. Loss: 0.0076, Align loss: 0.0055, Uniform loss: -3.8198
+2022-07-14 07:51:07 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 07:51:07 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[23](0/537): Loss: 0.0076, Align loss: 0.0061, Uniform loss: -3.8076
+2022-07-14 07:54:47 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[23](107/537): Loss: 0.0077, Align loss: 0.0057, Uniform loss: -3.8040
+2022-07-14 07:58:28 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[23](214/537): Loss: 0.0075, Align loss: 0.0055, Uniform loss: -3.8053
+2022-07-14 08:02:09 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[23](321/537): Loss: 0.0098, Align loss: 0.0077, Uniform loss: -3.5841
+2022-07-14 08:05:50 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[23](428/537): Loss: 0.0081, Align loss: 0.0059, Uniform loss: -3.7154
+2022-07-14 08:09:28 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[23](535/537): Loss: 0.0079, Align loss: 0.0065, Uniform loss: -3.7541
+2022-07-14 08:09:29 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 23 Complete: Avg. Loss: 0.0082, Align loss: 0.0060, Uniform loss: -3.7399
+2022-07-14 08:09:50 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 08:09:50 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[24](0/537): Loss: 0.0080, Align loss: 0.0063, Uniform loss: -3.7047
+2022-07-14 08:13:30 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[24](107/537): Loss: 0.0078, Align loss: 0.0055, Uniform loss: -3.8149
+2022-07-14 08:17:11 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[24](214/537): Loss: 0.0078, Align loss: 0.0055, Uniform loss: -3.8218
+2022-07-14 08:20:52 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[24](321/537): Loss: 0.0077, Align loss: 0.0061, Uniform loss: -3.7710
+2022-07-14 08:24:33 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[24](428/537): Loss: 0.0077, Align loss: 0.0054, Uniform loss: -3.7897
+2022-07-14 08:28:11 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[24](535/537): Loss: 0.0080, Align loss: 0.0059, Uniform loss: -3.7671
+2022-07-14 08:28:12 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 24 Complete: Avg. Loss: 0.0077, Align loss: 0.0056, Uniform loss: -3.8007
+2022-07-14 08:28:12 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 08:28:13 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 08:29:07 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[24](112/560): indices 10656 to 10751 extracted
+2022-07-14 08:29:52 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[24](224/560): indices 21408 to 21503 extracted
+2022-07-14 08:30:36 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[24](336/560): indices 32160 to 32255 extracted
+2022-07-14 08:31:21 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[24](448/560): indices 42912 to 43007 extracted
+2022-07-14 08:32:05 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[24](560/560): indices 53664 to 53693 extracted
+2022-07-14 08:32:06 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 08:32:33 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[24](97/486): indices 9216 to 9311 extracted
+2022-07-14 08:32:53 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[24](194/486): indices 18528 to 18623 extracted
+2022-07-14 08:33:12 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[24](291/486): indices 27840 to 27935 extracted
+2022-07-14 08:33:32 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[24](388/486): indices 37152 to 37247 extracted
+2022-07-14 08:33:52 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[24](485/486): indices 46464 to 46559 extracted
+2022-07-14 08:33:52 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 08:34:19 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 24: accuracy = 69.2% , top1: 3.7%, top5: 10.9%, hit_rate: 4.1%
+2022-07-14 08:34:48 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 08:34:48 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[25](0/537): Loss: 0.0077, Align loss: 0.0058, Uniform loss: -3.8328
+2022-07-14 08:38:30 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[25](107/537): Loss: 0.0076, Align loss: 0.0055, Uniform loss: -3.8295
+2022-07-14 08:42:11 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[25](214/537): Loss: 0.0076, Align loss: 0.0060, Uniform loss: -3.7477
+2022-07-14 08:45:52 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[25](321/537): Loss: 0.0077, Align loss: 0.0058, Uniform loss: -3.8027
+2022-07-14 08:49:32 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[25](428/537): Loss: 0.0075, Align loss: 0.0057, Uniform loss: -3.8392
+2022-07-14 08:53:10 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[25](535/537): Loss: 0.0082, Align loss: 0.0057, Uniform loss: -3.8280
+2022-07-14 08:53:11 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 25 Complete: Avg. Loss: 0.0077, Align loss: 0.0057, Uniform loss: -3.8056
+2022-07-14 08:53:33 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 08:53:33 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[26](0/537): Loss: 0.0075, Align loss: 0.0055, Uniform loss: -3.8237
+2022-07-14 08:57:14 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[26](107/537): Loss: 0.0076, Align loss: 0.0064, Uniform loss: -3.7628
+2022-07-14 09:00:55 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[26](214/537): Loss: 0.0076, Align loss: 0.0056, Uniform loss: -3.8043
+2022-07-14 09:04:36 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[26](321/537): Loss: 0.0077, Align loss: 0.0055, Uniform loss: -3.7996
+2022-07-14 09:08:16 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[26](428/537): Loss: 0.0076, Align loss: 0.0064, Uniform loss: -3.7918
+2022-07-14 09:11:54 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[26](535/537): Loss: 0.0077, Align loss: 0.0058, Uniform loss: -3.7659
+2022-07-14 09:11:55 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 26 Complete: Avg. Loss: 0.0077, Align loss: 0.0059, Uniform loss: -3.7889
+2022-07-14 09:12:17 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 09:12:17 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[27](0/537): Loss: 0.0078, Align loss: 0.0058, Uniform loss: -3.7857
+2022-07-14 09:15:57 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[27](107/537): Loss: 0.0076, Align loss: 0.0057, Uniform loss: -3.8166
+2022-07-14 09:19:38 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[27](214/537): Loss: 0.0077, Align loss: 0.0056, Uniform loss: -3.7816
+2022-07-14 09:23:19 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[27](321/537): Loss: 0.0075, Align loss: 0.0058, Uniform loss: -3.7892
+2022-07-14 09:27:00 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[27](428/537): Loss: 0.0077, Align loss: 0.0061, Uniform loss: -3.8150
+2022-07-14 09:30:37 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[27](535/537): Loss: 0.0091, Align loss: 0.0071, Uniform loss: -3.6469
+2022-07-14 09:30:39 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 27 Complete: Avg. Loss: 0.0078, Align loss: 0.0061, Uniform loss: -3.7769
+2022-07-14 09:30:39 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 09:30:39 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 09:31:34 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[27](112/560): indices 10656 to 10751 extracted
+2022-07-14 09:32:18 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[27](224/560): indices 21408 to 21503 extracted
+2022-07-14 09:33:03 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[27](336/560): indices 32160 to 32255 extracted
+2022-07-14 09:33:47 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[27](448/560): indices 42912 to 43007 extracted
+2022-07-14 09:34:32 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[27](560/560): indices 53664 to 53693 extracted
+2022-07-14 09:34:32 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 09:34:59 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[27](97/486): indices 9216 to 9311 extracted
+2022-07-14 09:35:19 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[27](194/486): indices 18528 to 18623 extracted
+2022-07-14 09:35:39 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[27](291/486): indices 27840 to 27935 extracted
+2022-07-14 09:35:59 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[27](388/486): indices 37152 to 37247 extracted
+2022-07-14 09:36:19 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[27](485/486): indices 46464 to 46559 extracted
+2022-07-14 09:36:19 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 09:36:47 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 27: accuracy = 64.5% , top1: 2.8%, top5: 8.7%, hit_rate: 3.2%
+2022-07-14 09:37:16 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 09:37:16 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[28](0/537): Loss: 0.0082, Align loss: 0.0068, Uniform loss: -3.7106
+2022-07-14 09:40:58 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[28](107/537): Loss: 0.0079, Align loss: 0.0065, Uniform loss: -3.7436
+2022-07-14 09:44:39 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[28](214/537): Loss: 0.0193, Align loss: 0.0079, Uniform loss: -3.2063
+2022-07-14 09:48:19 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[28](321/537): Loss: 0.0118, Align loss: 0.0060, Uniform loss: -3.4960
+2022-07-14 09:52:00 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[28](428/537): Loss: 0.0089, Align loss: 0.0061, Uniform loss: -3.6513
+2022-07-14 09:55:38 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[28](535/537): Loss: 0.0083, Align loss: 0.0052, Uniform loss: -3.7194
+2022-07-14 09:55:39 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 28 Complete: Avg. Loss: 0.0120, Align loss: 0.0067, Uniform loss: -3.5276
+2022-07-14 09:56:01 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 09:56:01 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[29](0/537): Loss: 0.0078, Align loss: 0.0051, Uniform loss: -3.7656
+2022-07-14 09:59:41 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[29](107/537): Loss: 0.0079, Align loss: 0.0051, Uniform loss: -3.7801
+2022-07-14 10:03:22 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[29](214/537): Loss: 0.0077, Align loss: 0.0051, Uniform loss: -3.7939
+2022-07-14 10:07:03 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[29](321/537): Loss: 0.0075, Align loss: 0.0050, Uniform loss: -3.8138
+2022-07-14 10:10:43 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[29](428/537): Loss: 0.0077, Align loss: 0.0051, Uniform loss: -3.8078
+2022-07-14 10:14:21 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[29](535/537): Loss: 0.0078, Align loss: 0.0049, Uniform loss: -3.8162
+2022-07-14 10:14:22 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 29 Complete: Avg. Loss: 0.0078, Align loss: 0.0051, Uniform loss: -3.7981
+2022-07-14 10:14:44 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 10:14:44 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[30](0/537): Loss: 0.0077, Align loss: 0.0051, Uniform loss: -3.8183
+2022-07-14 10:18:24 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[30](107/537): Loss: 0.0076, Align loss: 0.0050, Uniform loss: -3.8278
+2022-07-14 10:22:05 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[30](214/537): Loss: 0.0083, Align loss: 0.0051, Uniform loss: -3.8180
+2022-07-14 10:25:46 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[30](321/537): Loss: 0.0076, Align loss: 0.0051, Uniform loss: -3.8101
+2022-07-14 10:29:27 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[30](428/537): Loss: 0.0077, Align loss: 0.0052, Uniform loss: -3.8182
+2022-07-14 10:33:04 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[30](535/537): Loss: 0.0075, Align loss: 0.0050, Uniform loss: -3.8142
+2022-07-14 10:33:06 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 30 Complete: Avg. Loss: 0.0076, Align loss: 0.0050, Uniform loss: -3.8317
+2022-07-14 10:33:06 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 10:33:06 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 10:34:15 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[30](112/560): indices 10656 to 10751 extracted
+2022-07-14 10:35:00 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[30](224/560): indices 21408 to 21503 extracted
+2022-07-14 10:35:45 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[30](336/560): indices 32160 to 32255 extracted
+2022-07-14 10:36:29 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[30](448/560): indices 42912 to 43007 extracted
+2022-07-14 10:37:13 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[30](560/560): indices 53664 to 53693 extracted
+2022-07-14 10:37:14 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 10:38:08 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[30](97/486): indices 9216 to 9311 extracted
+2022-07-14 10:38:39 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[30](194/486): indices 18528 to 18623 extracted
+2022-07-14 10:39:12 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[30](291/486): indices 27840 to 27935 extracted
+2022-07-14 10:40:08 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[30](388/486): indices 37152 to 37247 extracted
+2022-07-14 10:40:48 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[30](485/486): indices 46464 to 46559 extracted
+2022-07-14 10:40:48 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 10:41:18 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 30: accuracy = 70.7% , top1: 4.3%, top5: 12.1%, hit_rate: 4.7%
+2022-07-14 10:42:10 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 10:42:10 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[31](0/537): Loss: 0.0077, Align loss: 0.0051, Uniform loss: -3.8081
+2022-07-14 10:45:52 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[31](107/537): Loss: 0.0075, Align loss: 0.0049, Uniform loss: -3.8493
+2022-07-14 10:49:33 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[31](214/537): Loss: 0.0076, Align loss: 0.0051, Uniform loss: -3.8415
+2022-07-14 10:53:14 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[31](321/537): Loss: 0.0076, Align loss: 0.0050, Uniform loss: -3.8494
+2022-07-14 10:56:54 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[31](428/537): Loss: 0.0076, Align loss: 0.0049, Uniform loss: -3.8438
+2022-07-14 11:00:32 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[31](535/537): Loss: 0.0076, Align loss: 0.0052, Uniform loss: -3.8251
+2022-07-14 11:00:33 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 31 Complete: Avg. Loss: 0.0075, Align loss: 0.0050, Uniform loss: -3.8410
+2022-07-14 11:00:56 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 11:00:56 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[32](0/537): Loss: 0.0076, Align loss: 0.0050, Uniform loss: -3.8328
+2022-07-14 11:04:36 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[32](107/537): Loss: 0.0074, Align loss: 0.0050, Uniform loss: -3.8535
+2022-07-14 11:08:17 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[32](214/537): Loss: 0.0075, Align loss: 0.0049, Uniform loss: -3.8540
+2022-07-14 11:11:57 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[32](321/537): Loss: 0.0076, Align loss: 0.0052, Uniform loss: -3.8326
+2022-07-14 11:15:38 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[32](428/537): Loss: 0.0074, Align loss: 0.0051, Uniform loss: -3.8496
+2022-07-14 11:19:16 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[32](535/537): Loss: 0.0075, Align loss: 0.0053, Uniform loss: -3.8315
+2022-07-14 11:19:17 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 32 Complete: Avg. Loss: 0.0075, Align loss: 0.0051, Uniform loss: -3.8403
+2022-07-14 11:19:38 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 11:19:38 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[33](0/537): Loss: 0.0075, Align loss: 0.0049, Uniform loss: -3.8415
+2022-07-14 11:23:19 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[33](107/537): Loss: 0.0075, Align loss: 0.0052, Uniform loss: -3.8631
+2022-07-14 11:27:00 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[33](214/537): Loss: 0.0075, Align loss: 0.0051, Uniform loss: -3.8345
+2022-07-14 11:30:40 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[33](321/537): Loss: 0.0075, Align loss: 0.0050, Uniform loss: -3.8566
+2022-07-14 11:34:21 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[33](428/537): Loss: 0.0076, Align loss: 0.0056, Uniform loss: -3.8435
+2022-07-14 11:37:58 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[33](535/537): Loss: 0.0076, Align loss: 0.0054, Uniform loss: -3.8050
+2022-07-14 11:38:00 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 33 Complete: Avg. Loss: 0.0075, Align loss: 0.0052, Uniform loss: -3.8392
+2022-07-14 11:38:00 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 11:38:01 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 11:38:55 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[33](112/560): indices 10656 to 10751 extracted
+2022-07-14 11:39:40 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[33](224/560): indices 21408 to 21503 extracted
+2022-07-14 11:40:24 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[33](336/560): indices 32160 to 32255 extracted
+2022-07-14 11:41:09 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[33](448/560): indices 42912 to 43007 extracted
+2022-07-14 11:41:53 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[33](560/560): indices 53664 to 53693 extracted
+2022-07-14 11:41:54 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 11:42:26 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[33](97/486): indices 9216 to 9311 extracted
+2022-07-14 11:42:46 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[33](194/486): indices 18528 to 18623 extracted
+2022-07-14 11:43:06 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[33](291/486): indices 27840 to 27935 extracted
+2022-07-14 11:43:26 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[33](388/486): indices 37152 to 37247 extracted
+2022-07-14 11:43:46 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[33](485/486): indices 46464 to 46559 extracted
+2022-07-14 11:43:46 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 11:44:13 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 33: accuracy = 68.4% , top1: 3.9%, top5: 11.4%, hit_rate: 4.3%
+2022-07-14 11:44:43 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 11:44:43 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[34](0/537): Loss: 0.0075, Align loss: 0.0051, Uniform loss: -3.8504
+2022-07-14 11:48:24 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[34](107/537): Loss: 0.0076, Align loss: 0.0049, Uniform loss: -3.8439
+2022-07-14 11:52:05 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[34](214/537): Loss: 0.0075, Align loss: 0.0051, Uniform loss: -3.8530
+2022-07-14 11:55:45 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[34](321/537): Loss: 0.0075, Align loss: 0.0054, Uniform loss: -3.8198
+2022-07-14 11:59:26 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[34](428/537): Loss: 0.0078, Align loss: 0.0060, Uniform loss: -3.7296
+2022-07-14 12:03:03 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[34](535/537): Loss: 0.0308, Align loss: 0.0097, Uniform loss: -3.0354
+2022-07-14 12:03:05 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 34 Complete: Avg. Loss: 0.0081, Align loss: 0.0057, Uniform loss: -3.7878
+2022-07-14 12:03:27 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 12:03:27 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[35](0/537): Loss: 0.0241, Align loss: 0.0083, Uniform loss: -3.0559
+2022-07-14 12:07:07 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[35](107/537): Loss: 0.0096, Align loss: 0.0054, Uniform loss: -3.5386
+2022-07-14 12:10:48 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[35](214/537): Loss: 0.0085, Align loss: 0.0053, Uniform loss: -3.6964
+2022-07-14 12:14:28 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[35](321/537): Loss: 0.0086, Align loss: 0.0054, Uniform loss: -3.7696
+2022-07-14 12:18:09 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[35](428/537): Loss: 0.0079, Align loss: 0.0052, Uniform loss: -3.7732
+2022-07-14 12:21:46 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[35](535/537): Loss: 0.0076, Align loss: 0.0052, Uniform loss: -3.7966
+2022-07-14 12:21:48 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 35 Complete: Avg. Loss: 0.0108, Align loss: 0.0057, Uniform loss: -3.6124
+2022-07-14 12:22:09 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 12:22:09 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[36](0/537): Loss: 0.0076, Align loss: 0.0050, Uniform loss: -3.7865
+2022-07-14 12:25:49 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[36](107/537): Loss: 0.0076, Align loss: 0.0051, Uniform loss: -3.8168
+2022-07-14 12:29:30 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[36](214/537): Loss: 0.0078, Align loss: 0.0047, Uniform loss: -3.8131
+2022-07-14 12:33:10 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[36](321/537): Loss: 0.0076, Align loss: 0.0048, Uniform loss: -3.8144
+2022-07-14 12:36:51 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[36](428/537): Loss: 0.0077, Align loss: 0.0049, Uniform loss: -3.8464
+2022-07-14 12:40:28 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[36](535/537): Loss: 0.0075, Align loss: 0.0050, Uniform loss: -3.8417
+2022-07-14 12:40:30 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 36 Complete: Avg. Loss: 0.0076, Align loss: 0.0050, Uniform loss: -3.8202
+2022-07-14 12:40:30 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 12:40:31 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 12:41:26 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[36](112/560): indices 10656 to 10751 extracted
+2022-07-14 12:42:10 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[36](224/560): indices 21408 to 21503 extracted
+2022-07-14 12:42:55 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[36](336/560): indices 32160 to 32255 extracted
+2022-07-14 12:43:39 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[36](448/560): indices 42912 to 43007 extracted
+2022-07-14 12:44:23 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[36](560/560): indices 53664 to 53693 extracted
+2022-07-14 12:44:24 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 12:44:52 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[36](97/486): indices 9216 to 9311 extracted
+2022-07-14 12:45:12 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[36](194/486): indices 18528 to 18623 extracted
+2022-07-14 12:45:32 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[36](291/486): indices 27840 to 27935 extracted
+2022-07-14 12:45:52 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[36](388/486): indices 37152 to 37247 extracted
+2022-07-14 12:46:12 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[36](485/486): indices 46464 to 46559 extracted
+2022-07-14 12:46:12 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 12:46:37 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 36: accuracy = 69.1% , top1: 4.2%, top5: 11.5%, hit_rate: 4.6%
+2022-07-14 12:47:05 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 12:47:05 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[37](0/537): Loss: 0.0077, Align loss: 0.0048, Uniform loss: -3.8010
+2022-07-14 12:50:46 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[37](107/537): Loss: 0.0076, Align loss: 0.0050, Uniform loss: -3.8437
+2022-07-14 12:54:27 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[37](214/537): Loss: 0.0076, Align loss: 0.0050, Uniform loss: -3.8432
+2022-07-14 12:58:08 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[37](321/537): Loss: 0.0074, Align loss: 0.0049, Uniform loss: -3.8492
+2022-07-14 13:01:48 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[37](428/537): Loss: 0.0076, Align loss: 0.0051, Uniform loss: -3.8379
+2022-07-14 13:05:26 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[37](535/537): Loss: 0.0074, Align loss: 0.0048, Uniform loss: -3.8727
+2022-07-14 13:05:28 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 37 Complete: Avg. Loss: 0.0076, Align loss: 0.0049, Uniform loss: -3.8373
+2022-07-14 13:05:50 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 13:05:50 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[38](0/537): Loss: 0.0075, Align loss: 0.0046, Uniform loss: -3.8368
+2022-07-14 13:09:31 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[38](107/537): Loss: 0.0075, Align loss: 0.0048, Uniform loss: -3.8654
+2022-07-14 13:13:11 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[38](214/537): Loss: 0.0074, Align loss: 0.0049, Uniform loss: -3.8456
+2022-07-14 13:16:52 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[38](321/537): Loss: 0.0075, Align loss: 0.0047, Uniform loss: -3.8472
+2022-07-14 13:20:32 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[38](428/537): Loss: 0.0076, Align loss: 0.0049, Uniform loss: -3.8337
+2022-07-14 13:24:10 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[38](535/537): Loss: 0.0075, Align loss: 0.0049, Uniform loss: -3.8659
+2022-07-14 13:24:11 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 38 Complete: Avg. Loss: 0.0075, Align loss: 0.0049, Uniform loss: -3.8465
+2022-07-14 13:24:33 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 13:24:33 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[39](0/537): Loss: 0.0077, Align loss: 0.0051, Uniform loss: -3.8258
+2022-07-14 13:28:13 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[39](107/537): Loss: 0.0077, Align loss: 0.0049, Uniform loss: -3.8568
+2022-07-14 13:31:53 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[39](214/537): Loss: 0.0076, Align loss: 0.0048, Uniform loss: -3.8598
+2022-07-14 13:35:34 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[39](321/537): Loss: 0.0074, Align loss: 0.0050, Uniform loss: -3.8702
+2022-07-14 13:39:14 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[39](428/537): Loss: 0.0075, Align loss: 0.0053, Uniform loss: -3.8101
+2022-07-14 13:42:52 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[39](535/537): Loss: 0.0076, Align loss: 0.0051, Uniform loss: -3.8385
+2022-07-14 13:42:53 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 39 Complete: Avg. Loss: 0.0075, Align loss: 0.0050, Uniform loss: -3.8450
+2022-07-14 13:42:53 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 13:42:54 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 13:43:49 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[39](112/560): indices 10656 to 10751 extracted
+2022-07-14 13:44:34 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[39](224/560): indices 21408 to 21503 extracted
+2022-07-14 13:45:18 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[39](336/560): indices 32160 to 32255 extracted
+2022-07-14 13:46:03 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[39](448/560): indices 42912 to 43007 extracted
+2022-07-14 13:46:47 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[39](560/560): indices 53664 to 53693 extracted
+2022-07-14 13:46:48 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 13:47:15 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[39](97/486): indices 9216 to 9311 extracted
+2022-07-14 13:47:35 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[39](194/486): indices 18528 to 18623 extracted
+2022-07-14 13:47:55 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[39](291/486): indices 27840 to 27935 extracted
+2022-07-14 13:48:15 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[39](388/486): indices 37152 to 37247 extracted
+2022-07-14 13:48:35 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[39](485/486): indices 46464 to 46559 extracted
+2022-07-14 13:48:35 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 13:49:02 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 39: accuracy = 68.8% , top1: 4.1%, top5: 11.8%, hit_rate: 4.5%
+2022-07-14 13:49:31 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 13:49:31 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[40](0/537): Loss: 0.0076, Align loss: 0.0051, Uniform loss: -3.8465
+2022-07-14 13:53:12 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[40](107/537): Loss: 0.0075, Align loss: 0.0049, Uniform loss: -3.8147
+2022-07-14 13:56:53 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[40](214/537): Loss: 0.0075, Align loss: 0.0053, Uniform loss: -3.8488
+2022-07-14 14:00:33 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[40](321/537): Loss: 0.0075, Align loss: 0.0051, Uniform loss: -3.8465
+2022-07-14 14:04:14 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[40](428/537): Loss: 0.0078, Align loss: 0.0057, Uniform loss: -3.7475
+2022-07-14 14:07:51 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[40](535/537): Loss: 0.0074, Align loss: 0.0049, Uniform loss: -3.8562
+2022-07-14 14:07:52 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 40 Complete: Avg. Loss: 0.0075, Align loss: 0.0052, Uniform loss: -3.8352
+2022-07-14 14:08:14 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 14:08:14 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[41](0/537): Loss: 0.0077, Align loss: 0.0050, Uniform loss: -3.8389
+2022-07-14 14:11:54 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[41](107/537): Loss: 0.0074, Align loss: 0.0051, Uniform loss: -3.8438
+2022-07-14 14:15:35 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[41](214/537): Loss: 0.0074, Align loss: 0.0051, Uniform loss: -3.8427
+2022-07-14 14:19:15 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[41](321/537): Loss: 0.0074, Align loss: 0.0053, Uniform loss: -3.8535
+2022-07-14 14:22:56 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[41](428/537): Loss: 0.0076, Align loss: 0.0055, Uniform loss: -3.8137
+2022-07-14 14:26:33 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[41](535/537): Loss: 0.0076, Align loss: 0.0057, Uniform loss: -3.8297
+2022-07-14 14:26:34 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 41 Complete: Avg. Loss: 0.0075, Align loss: 0.0053, Uniform loss: -3.8299
+2022-07-14 14:26:55 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 14:26:55 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[42](0/537): Loss: 0.0074, Align loss: 0.0056, Uniform loss: -3.8215
+2022-07-14 14:30:35 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[42](107/537): Loss: 0.0075, Align loss: 0.0053, Uniform loss: -3.8509
+2022-07-14 14:34:16 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[42](214/537): Loss: 0.0075, Align loss: 0.0053, Uniform loss: -3.8225
+2022-07-14 14:37:56 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[42](321/537): Loss: 0.0076, Align loss: 0.0058, Uniform loss: -3.7791
+2022-07-14 14:41:37 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[42](428/537): Loss: 0.0079, Align loss: 0.0058, Uniform loss: -3.7617
+2022-07-14 14:45:14 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[42](535/537): Loss: 0.0078, Align loss: 0.0064, Uniform loss: -3.7676
+2022-07-14 14:45:16 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 42 Complete: Avg. Loss: 0.0076, Align loss: 0.0056, Uniform loss: -3.8080
+2022-07-14 14:45:16 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 14:45:17 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 14:46:12 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[42](112/560): indices 10656 to 10751 extracted
+2022-07-14 14:46:56 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[42](224/560): indices 21408 to 21503 extracted
+2022-07-14 14:47:41 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[42](336/560): indices 32160 to 32255 extracted
+2022-07-14 14:48:25 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[42](448/560): indices 42912 to 43007 extracted
+2022-07-14 14:49:09 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[42](560/560): indices 53664 to 53693 extracted
+2022-07-14 14:49:10 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 14:49:37 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[42](97/486): indices 9216 to 9311 extracted
+2022-07-14 14:49:57 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[42](194/486): indices 18528 to 18623 extracted
+2022-07-14 14:50:17 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[42](291/486): indices 27840 to 27935 extracted
+2022-07-14 14:50:37 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[42](388/486): indices 37152 to 37247 extracted
+2022-07-14 14:50:57 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[42](485/486): indices 46464 to 46559 extracted
+2022-07-14 14:50:57 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 14:51:24 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 42: accuracy = 68.6% , top1: 3.7%, top5: 10.6%, hit_rate: 4.1%
+2022-07-14 14:51:53 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 14:51:53 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[43](0/537): Loss: 0.0076, Align loss: 0.0060, Uniform loss: -3.7520
+2022-07-14 14:55:33 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[43](107/537): Loss: 0.0076, Align loss: 0.0060, Uniform loss: -3.7864
+2022-07-14 14:59:14 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[43](214/537): Loss: 0.0076, Align loss: 0.0054, Uniform loss: -3.7957
+2022-07-14 15:02:55 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[43](321/537): Loss: 0.0075, Align loss: 0.0057, Uniform loss: -3.8217
+2022-07-14 15:06:35 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[43](428/537): Loss: 0.0077, Align loss: 0.0056, Uniform loss: -3.8415
+2022-07-14 15:10:12 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[43](535/537): Loss: 0.0076, Align loss: 0.0061, Uniform loss: -3.7688
+2022-07-14 15:10:14 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 43 Complete: Avg. Loss: 0.0076, Align loss: 0.0057, Uniform loss: -3.8031
+2022-07-14 15:10:37 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 15:10:37 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[44](0/537): Loss: 0.0080, Align loss: 0.0060, Uniform loss: -3.7162
+2022-07-14 15:14:17 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[44](107/537): Loss: 0.0076, Align loss: 0.0056, Uniform loss: -3.7934
+2022-07-14 15:17:58 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[44](214/537): Loss: 0.0075, Align loss: 0.0057, Uniform loss: -3.7711
+2022-07-14 15:21:38 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[44](321/537): Loss: 0.0077, Align loss: 0.0065, Uniform loss: -3.7298
+2022-07-14 15:25:19 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[44](428/537): Loss: 0.0076, Align loss: 0.0058, Uniform loss: -3.7763
+2022-07-14 15:28:56 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[44](535/537): Loss: 0.0079, Align loss: 0.0061, Uniform loss: -3.7679
+2022-07-14 15:28:57 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 44 Complete: Avg. Loss: 0.0077, Align loss: 0.0060, Uniform loss: -3.7701
+2022-07-14 15:29:19 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 15:29:19 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[45](0/537): Loss: 0.0076, Align loss: 0.0056, Uniform loss: -3.7867
+2022-07-14 15:32:59 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[45](107/537): Loss: 0.0078, Align loss: 0.0058, Uniform loss: -3.7951
+2022-07-14 15:36:40 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[45](214/537): Loss: 0.0075, Align loss: 0.0055, Uniform loss: -3.7952
+2022-07-14 15:40:20 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[45](321/537): Loss: 0.0077, Align loss: 0.0056, Uniform loss: -3.7596
+2022-07-14 15:44:01 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[45](428/537): Loss: 0.0076, Align loss: 0.0056, Uniform loss: -3.8018
+2022-07-14 15:47:38 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[45](535/537): Loss: 0.0077, Align loss: 0.0057, Uniform loss: -3.7927
+2022-07-14 15:47:40 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 45 Complete: Avg. Loss: 0.0076, Align loss: 0.0057, Uniform loss: -3.8036
+2022-07-14 15:47:40 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 15:47:40 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 15:48:36 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[45](112/560): indices 10656 to 10751 extracted
+2022-07-14 15:49:20 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[45](224/560): indices 21408 to 21503 extracted
+2022-07-14 15:50:05 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[45](336/560): indices 32160 to 32255 extracted
+2022-07-14 15:50:49 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[45](448/560): indices 42912 to 43007 extracted
+2022-07-14 15:51:33 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[45](560/560): indices 53664 to 53693 extracted
+2022-07-14 15:51:34 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 15:52:01 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[45](97/486): indices 9216 to 9311 extracted
+2022-07-14 15:52:21 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[45](194/486): indices 18528 to 18623 extracted
+2022-07-14 15:52:41 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[45](291/486): indices 27840 to 27935 extracted
+2022-07-14 15:53:01 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[45](388/486): indices 37152 to 37247 extracted
+2022-07-14 15:53:21 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[45](485/486): indices 46464 to 46559 extracted
+2022-07-14 15:53:21 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 15:53:46 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 45: accuracy = 67.8% , top1: 3.9%, top5: 11.1%, hit_rate: 4.4%
+2022-07-14 15:54:16 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 15:54:16 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[46](0/537): Loss: 0.0074, Align loss: 0.0058, Uniform loss: -3.8015
+2022-07-14 15:57:57 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[46](107/537): Loss: 0.0076, Align loss: 0.0054, Uniform loss: -3.8458
+2022-07-14 16:01:37 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[46](214/537): Loss: 0.0075, Align loss: 0.0056, Uniform loss: -3.8016
+2022-07-14 16:05:18 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[46](321/537): Loss: 0.0075, Align loss: 0.0052, Uniform loss: -3.8400
+2022-07-14 16:08:59 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[46](428/537): Loss: 0.0078, Align loss: 0.0063, Uniform loss: -3.8091
+2022-07-14 16:12:36 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[46](535/537): Loss: 0.0076, Align loss: 0.0057, Uniform loss: -3.8278
+2022-07-14 16:12:38 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 46 Complete: Avg. Loss: 0.0075, Align loss: 0.0056, Uniform loss: -3.8083
+2022-07-14 16:13:01 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 16:13:01 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[47](0/537): Loss: 0.0074, Align loss: 0.0055, Uniform loss: -3.8309
+2022-07-14 16:16:41 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[47](107/537): Loss: 0.0075, Align loss: 0.0055, Uniform loss: -3.8194
+2022-07-14 16:20:22 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[47](214/537): Loss: 0.0074, Align loss: 0.0055, Uniform loss: -3.8497
+2022-07-14 16:24:03 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[47](321/537): Loss: 0.0079, Align loss: 0.0057, Uniform loss: -3.7718
+2022-07-14 16:27:43 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[47](428/537): Loss: 0.0086, Align loss: 0.0073, Uniform loss: -3.5687
+2022-07-14 16:31:21 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[47](535/537): Loss: 0.0109, Align loss: 0.0063, Uniform loss: -3.4498
+2022-07-14 16:31:22 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 47 Complete: Avg. Loss: 0.0090, Align loss: 0.0062, Uniform loss: -3.7160
+2022-07-14 16:31:45 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 16:31:45 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[48](0/537): Loss: 0.0109, Align loss: 0.0063, Uniform loss: -3.4407
+2022-07-14 16:35:25 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[48](107/537): Loss: 0.0079, Align loss: 0.0052, Uniform loss: -3.7212
+2022-07-14 16:39:06 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[48](214/537): Loss: 0.0077, Align loss: 0.0048, Uniform loss: -3.8047
+2022-07-14 16:42:46 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[48](321/537): Loss: 0.0077, Align loss: 0.0049, Uniform loss: -3.8068
+2022-07-14 16:46:27 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[48](428/537): Loss: 0.0076, Align loss: 0.0052, Uniform loss: -3.8032
+2022-07-14 16:50:04 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[48](535/537): Loss: 0.0075, Align loss: 0.0052, Uniform loss: -3.8519
+2022-07-14 16:50:06 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 48 Complete: Avg. Loss: 0.0079, Align loss: 0.0052, Uniform loss: -3.7699
+2022-07-14 16:50:06 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 16:50:06 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 16:51:02 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[48](112/560): indices 10656 to 10751 extracted
+2022-07-14 16:51:46 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[48](224/560): indices 21408 to 21503 extracted
+2022-07-14 16:52:31 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[48](336/560): indices 32160 to 32255 extracted
+2022-07-14 16:53:15 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[48](448/560): indices 42912 to 43007 extracted
+2022-07-14 16:53:59 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[48](560/560): indices 53664 to 53693 extracted
+2022-07-14 16:54:00 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 16:54:28 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[48](97/486): indices 9216 to 9311 extracted
+2022-07-14 16:54:48 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[48](194/486): indices 18528 to 18623 extracted
+2022-07-14 16:55:08 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[48](291/486): indices 27840 to 27935 extracted
+2022-07-14 16:55:28 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[48](388/486): indices 37152 to 37247 extracted
+2022-07-14 16:55:48 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[48](485/486): indices 46464 to 46559 extracted
+2022-07-14 16:55:48 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 16:56:14 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 48: accuracy = 69.8% , top1: 4.0%, top5: 11.6%, hit_rate: 4.4%
+2022-07-14 16:56:42 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 16:56:42 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[49](0/537): Loss: 0.0076, Align loss: 0.0049, Uniform loss: -3.8280
+2022-07-14 17:00:23 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[49](107/537): Loss: 0.0075, Align loss: 0.0049, Uniform loss: -3.8355
+2022-07-14 17:04:04 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[49](214/537): Loss: 0.0074, Align loss: 0.0048, Uniform loss: -3.8619
+2022-07-14 17:07:45 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[49](321/537): Loss: 0.0075, Align loss: 0.0048, Uniform loss: -3.8291
+2022-07-14 17:11:25 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[49](428/537): Loss: 0.0075, Align loss: 0.0047, Uniform loss: -3.8467
+2022-07-14 17:15:03 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[49](535/537): Loss: 0.0076, Align loss: 0.0049, Uniform loss: -3.8474
+2022-07-14 17:15:04 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 49 Complete: Avg. Loss: 0.0075, Align loss: 0.0048, Uniform loss: -3.8478
+2022-07-14 17:15:26 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 17:15:26 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[50](0/537): Loss: 0.0074, Align loss: 0.0046, Uniform loss: -3.8763
+2022-07-14 17:19:07 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[50](107/537): Loss: 0.0074, Align loss: 0.0046, Uniform loss: -3.8309
+2022-07-14 17:22:47 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[50](214/537): Loss: 0.0074, Align loss: 0.0045, Uniform loss: -3.8669
+2022-07-14 17:26:27 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[50](321/537): Loss: 0.0077, Align loss: 0.0046, Uniform loss: -3.8550
+2022-07-14 17:30:08 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[50](428/537): Loss: 0.0074, Align loss: 0.0048, Uniform loss: -3.8627
+2022-07-14 17:33:45 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[50](535/537): Loss: 0.0074, Align loss: 0.0047, Uniform loss: -3.8801
+2022-07-14 17:33:46 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 50 Complete: Avg. Loss: 0.0075, Align loss: 0.0047, Uniform loss: -3.8571
+2022-07-14 17:34:08 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 17:34:08 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[51](0/537): Loss: 0.0074, Align loss: 0.0046, Uniform loss: -3.8640
+2022-07-14 17:37:48 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[51](107/537): Loss: 0.0075, Align loss: 0.0048, Uniform loss: -3.8598
+2022-07-14 17:41:29 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[51](214/537): Loss: 0.0074, Align loss: 0.0050, Uniform loss: -3.8610
+2022-07-14 17:45:09 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[51](321/537): Loss: 0.0074, Align loss: 0.0048, Uniform loss: -3.8669
+2022-07-14 17:48:50 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[51](428/537): Loss: 0.0074, Align loss: 0.0050, Uniform loss: -3.8653
+2022-07-14 17:52:27 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[51](535/537): Loss: 0.0075, Align loss: 0.0047, Uniform loss: -3.8237
+2022-07-14 17:52:28 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 51 Complete: Avg. Loss: 0.0074, Align loss: 0.0048, Uniform loss: -3.8561
+2022-07-14 17:52:28 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 17:52:29 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 17:53:24 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[51](112/560): indices 10656 to 10751 extracted
+2022-07-14 17:54:08 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[51](224/560): indices 21408 to 21503 extracted
+2022-07-14 17:54:53 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[51](336/560): indices 32160 to 32255 extracted
+2022-07-14 17:55:37 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[51](448/560): indices 42912 to 43007 extracted
+2022-07-14 17:56:22 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[51](560/560): indices 53664 to 53693 extracted
+2022-07-14 17:56:22 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 17:56:50 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[51](97/486): indices 9216 to 9311 extracted
+2022-07-14 17:57:10 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[51](194/486): indices 18528 to 18623 extracted
+2022-07-14 17:57:30 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[51](291/486): indices 27840 to 27935 extracted
+2022-07-14 17:57:49 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[51](388/486): indices 37152 to 37247 extracted
+2022-07-14 17:58:09 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[51](485/486): indices 46464 to 46559 extracted
+2022-07-14 17:58:09 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 17:58:35 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 51: accuracy = 70.5% , top1: 4.6%, top5: 12.7%, hit_rate: 5.1%
+2022-07-14 17:59:07 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 17:59:07 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[52](0/537): Loss: 0.0074, Align loss: 0.0047, Uniform loss: -3.8596
+2022-07-14 18:02:48 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[52](107/537): Loss: 0.0073, Align loss: 0.0046, Uniform loss: -3.8600
+2022-07-14 18:06:29 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[52](214/537): Loss: 0.0074, Align loss: 0.0048, Uniform loss: -3.8809
+2022-07-14 18:10:09 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[52](321/537): Loss: 0.0076, Align loss: 0.0049, Uniform loss: -3.8376
+2022-07-14 18:13:50 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[52](428/537): Loss: 0.0075, Align loss: 0.0051, Uniform loss: -3.8298
+2022-07-14 18:17:27 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[52](535/537): Loss: 0.0075, Align loss: 0.0047, Uniform loss: -3.8299
+2022-07-14 18:17:29 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 52 Complete: Avg. Loss: 0.0074, Align loss: 0.0049, Uniform loss: -3.8523
+2022-07-14 18:17:54 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 18:17:54 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[53](0/537): Loss: 0.0074, Align loss: 0.0048, Uniform loss: -3.8573
+2022-07-14 18:21:34 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[53](107/537): Loss: 0.0073, Align loss: 0.0049, Uniform loss: -3.8672
+2022-07-14 18:25:14 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[53](214/537): Loss: 0.0074, Align loss: 0.0049, Uniform loss: -3.8403
+2022-07-14 18:28:55 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[53](321/537): Loss: 0.0074, Align loss: 0.0051, Uniform loss: -3.8417
+2022-07-14 18:32:36 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[53](428/537): Loss: 0.0074, Align loss: 0.0053, Uniform loss: -3.8317
+2022-07-14 18:36:13 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[53](535/537): Loss: 0.0074, Align loss: 0.0053, Uniform loss: -3.8459
+2022-07-14 18:36:15 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 53 Complete: Avg. Loss: 0.0074, Align loss: 0.0050, Uniform loss: -3.8499
+2022-07-14 18:36:37 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 18:36:37 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[54](0/537): Loss: 0.0074, Align loss: 0.0052, Uniform loss: -3.8461
+2022-07-14 18:40:17 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[54](107/537): Loss: 0.0075, Align loss: 0.0050, Uniform loss: -3.8467
+2022-07-14 18:43:57 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[54](214/537): Loss: 0.0074, Align loss: 0.0050, Uniform loss: -3.8427
+2022-07-14 18:47:38 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[54](321/537): Loss: 0.0075, Align loss: 0.0055, Uniform loss: -3.8336
+2022-07-14 18:51:18 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[54](428/537): Loss: 0.0075, Align loss: 0.0054, Uniform loss: -3.8503
+2022-07-14 18:54:55 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[54](535/537): Loss: 0.0074, Align loss: 0.0054, Uniform loss: -3.8210
+2022-07-14 18:54:57 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 54 Complete: Avg. Loss: 0.0075, Align loss: 0.0052, Uniform loss: -3.8373
+2022-07-14 18:54:57 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 18:54:57 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 18:55:53 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[54](112/560): indices 10656 to 10751 extracted
+2022-07-14 18:56:38 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[54](224/560): indices 21408 to 21503 extracted
+2022-07-14 18:57:22 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[54](336/560): indices 32160 to 32255 extracted
+2022-07-14 18:58:07 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[54](448/560): indices 42912 to 43007 extracted
+2022-07-14 18:58:51 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[54](560/560): indices 53664 to 53693 extracted
+2022-07-14 18:58:52 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 18:59:19 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[54](97/486): indices 9216 to 9311 extracted
+2022-07-14 18:59:39 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[54](194/486): indices 18528 to 18623 extracted
+2022-07-14 18:59:59 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[54](291/486): indices 27840 to 27935 extracted
+2022-07-14 19:00:19 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[54](388/486): indices 37152 to 37247 extracted
+2022-07-14 19:00:39 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[54](485/486): indices 46464 to 46559 extracted
+2022-07-14 19:00:39 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 19:01:05 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 54: accuracy = 69.1% , top1: 4.1%, top5: 11.5%, hit_rate: 4.5%
+2022-07-14 19:01:34 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 19:01:34 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[55](0/537): Loss: 0.0074, Align loss: 0.0054, Uniform loss: -3.8450
+2022-07-14 19:05:15 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[55](107/537): Loss: 0.0074, Align loss: 0.0050, Uniform loss: -3.8287
+2022-07-14 19:08:56 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[55](214/537): Loss: 0.0078, Align loss: 0.0056, Uniform loss: -3.8708
+2022-07-14 19:12:37 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[55](321/537): Loss: 0.0078, Align loss: 0.0064, Uniform loss: -3.6657
+2022-07-14 19:16:17 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[55](428/537): Loss: 0.0094, Align loss: 0.0058, Uniform loss: -3.5784
+2022-07-14 19:19:54 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[55](535/537): Loss: 0.0076, Align loss: 0.0051, Uniform loss: -3.7847
+2022-07-14 19:19:56 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 55 Complete: Avg. Loss: 0.0093, Align loss: 0.0058, Uniform loss: -3.6901
+2022-07-14 19:20:19 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 19:20:19 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[56](0/537): Loss: 0.0077, Align loss: 0.0049, Uniform loss: -3.7744
+2022-07-14 19:23:59 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[56](107/537): Loss: 0.0077, Align loss: 0.0047, Uniform loss: -3.7607
+2022-07-14 19:27:39 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[56](214/537): Loss: 0.0078, Align loss: 0.0050, Uniform loss: -3.8057
+2022-07-14 19:31:20 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[56](321/537): Loss: 0.0077, Align loss: 0.0050, Uniform loss: -3.8540
+2022-07-14 19:35:00 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[56](428/537): Loss: 0.0076, Align loss: 0.0049, Uniform loss: -3.8214
+2022-07-14 19:38:37 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[56](535/537): Loss: 0.0076, Align loss: 0.0048, Uniform loss: -3.8546
+2022-07-14 19:38:39 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 56 Complete: Avg. Loss: 0.0076, Align loss: 0.0049, Uniform loss: -3.8182
+2022-07-14 19:39:01 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 19:39:01 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[57](0/537): Loss: 0.0075, Align loss: 0.0046, Uniform loss: -3.8412
+2022-07-14 19:42:41 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[57](107/537): Loss: 0.0075, Align loss: 0.0047, Uniform loss: -3.8466
+2022-07-14 19:46:22 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[57](214/537): Loss: 0.0074, Align loss: 0.0046, Uniform loss: -3.8273
+2022-07-14 19:50:02 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[57](321/537): Loss: 0.0074, Align loss: 0.0049, Uniform loss: -3.8470
+2022-07-14 19:53:43 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[57](428/537): Loss: 0.0074, Align loss: 0.0049, Uniform loss: -3.8762
+2022-07-14 19:57:20 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[57](535/537): Loss: 0.0074, Align loss: 0.0048, Uniform loss: -3.8602
+2022-07-14 19:57:21 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 57 Complete: Avg. Loss: 0.0075, Align loss: 0.0047, Uniform loss: -3.8518
+2022-07-14 19:57:21 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 19:57:22 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 19:58:17 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[57](112/560): indices 10656 to 10751 extracted
+2022-07-14 19:59:01 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[57](224/560): indices 21408 to 21503 extracted
+2022-07-14 19:59:46 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[57](336/560): indices 32160 to 32255 extracted
+2022-07-14 20:00:30 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[57](448/560): indices 42912 to 43007 extracted
+2022-07-14 20:01:14 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[57](560/560): indices 53664 to 53693 extracted
+2022-07-14 20:01:15 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 20:01:42 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[57](97/486): indices 9216 to 9311 extracted
+2022-07-14 20:02:02 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[57](194/486): indices 18528 to 18623 extracted
+2022-07-14 20:02:22 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[57](291/486): indices 27840 to 27935 extracted
+2022-07-14 20:02:42 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[57](388/486): indices 37152 to 37247 extracted
+2022-07-14 20:03:02 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[57](485/486): indices 46464 to 46559 extracted
+2022-07-14 20:03:02 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 20:03:28 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 57: accuracy = 70.0% , top1: 4.6%, top5: 12.6%, hit_rate: 5.1%
+2022-07-14 20:03:58 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 20:03:58 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[58](0/537): Loss: 0.0075, Align loss: 0.0045, Uniform loss: -3.8501
+2022-07-14 20:07:39 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[58](107/537): Loss: 0.0074, Align loss: 0.0047, Uniform loss: -3.8604
+2022-07-14 20:11:20 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[58](214/537): Loss: 0.0076, Align loss: 0.0044, Uniform loss: -3.8765
+2022-07-14 20:15:00 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[58](321/537): Loss: 0.0074, Align loss: 0.0048, Uniform loss: -3.8438
+2022-07-14 20:18:41 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[58](428/537): Loss: 0.0074, Align loss: 0.0049, Uniform loss: -3.8715
+2022-07-14 20:22:18 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[58](535/537): Loss: 0.0075, Align loss: 0.0047, Uniform loss: -3.8457
+2022-07-14 20:22:20 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 58 Complete: Avg. Loss: 0.0074, Align loss: 0.0047, Uniform loss: -3.8583
+2022-07-14 20:22:43 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 20:22:43 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[59](0/537): Loss: 0.0075, Align loss: 0.0047, Uniform loss: -3.8607
+2022-07-14 20:26:24 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[59](107/537): Loss: 0.0074, Align loss: 0.0046, Uniform loss: -3.8564
+2022-07-14 20:30:04 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[59](214/537): Loss: 0.0074, Align loss: 0.0048, Uniform loss: -3.8717
+2022-07-14 20:33:45 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[59](321/537): Loss: 0.0074, Align loss: 0.0043, Uniform loss: -3.8475
+2022-07-14 20:37:25 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[59](428/537): Loss: 0.0074, Align loss: 0.0049, Uniform loss: -3.8674
+2022-07-14 20:41:03 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[59](535/537): Loss: 0.0074, Align loss: 0.0046, Uniform loss: -3.8820
+2022-07-14 20:41:04 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 59 Complete: Avg. Loss: 0.0074, Align loss: 0.0047, Uniform loss: -3.8621
+2022-07-14 20:41:26 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 20:41:26 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[60](0/537): Loss: 0.0075, Align loss: 0.0046, Uniform loss: -3.8718
+2022-07-14 20:45:06 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[60](107/537): Loss: 0.0073, Align loss: 0.0048, Uniform loss: -3.8748
+2022-07-14 20:48:47 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[60](214/537): Loss: 0.0074, Align loss: 0.0050, Uniform loss: -3.8648
+2022-07-14 20:52:27 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[60](321/537): Loss: 0.0075, Align loss: 0.0047, Uniform loss: -3.8307
+2022-07-14 20:56:07 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[60](428/537): Loss: 0.0074, Align loss: 0.0046, Uniform loss: -3.8464
+2022-07-14 20:59:44 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[60](535/537): Loss: 0.0074, Align loss: 0.0045, Uniform loss: -3.8665
+2022-07-14 20:59:46 | INFO     | clsslcvm.tools.train_cvm_epoch:95 - ===> Epoch 60 Complete: Avg. Loss: 0.0074, Align loss: 0.0048, Uniform loss: -3.8582
+2022-07-14 20:59:46 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 20:59:46 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 21:00:42 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[60](112/560): indices 10656 to 10751 extracted
+2022-07-14 21:01:26 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[60](224/560): indices 21408 to 21503 extracted
+2022-07-14 21:02:11 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[60](336/560): indices 32160 to 32255 extracted
+2022-07-14 21:02:55 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[60](448/560): indices 42912 to 43007 extracted
+2022-07-14 21:03:39 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[60](560/560): indices 53664 to 53693 extracted
+2022-07-14 21:03:40 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 21:04:25 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[60](97/486): indices 9216 to 9311 extracted
+2022-07-14 21:05:00 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[60](194/486): indices 18528 to 18623 extracted
+2022-07-14 21:05:28 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[60](291/486): indices 27840 to 27935 extracted
+2022-07-14 21:05:55 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[60](388/486): indices 37152 to 37247 extracted
+2022-07-14 21:06:23 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[60](485/486): indices 46464 to 46559 extracted
+2022-07-14 21:06:23 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 21:06:48 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 60: accuracy = 70.1% , top1: 4.9%, top5: 13.2%, hit_rate: 5.4%
+2022-07-14 21:07:21 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 21:07:21 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[61](0/537): Loss: 0.0075, Align loss: 0.0050, Uniform loss: -3.8532
+2022-07-14 21:11:04 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[61](107/537): Loss: 0.0075, Align loss: 0.0050, Uniform loss: -3.8503

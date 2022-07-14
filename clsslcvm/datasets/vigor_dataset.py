@@ -1,350 +1,155 @@
+import imp
 import os
 from matplotlib.pyplot import axis
 import numpy as np
 import random
 import torch
 from PIL import Image
+from torch.utils.data import Dataset
+from torch.utils.data.dataloader import default_collate
+from torch.utils.data.sampler import BatchSampler
 
-class VIGORDataloader():
-    def __init__(self, root_dir, transform, logger, version='', dim=4096, same_area=False, continuous=False, mining=False):
+
+class VIGORDataset(Dataset):
+    def __init__(self, root_dir, mode, transform, logger, version='', dim=4096, same_area=False, continuous=False):
+        assert mode in ['train', 'val']
         self.root_dir = root_dir
+        self.mode = mode
         self.logger = logger
         self.dim = dim
         self.same_area = same_area
         self.continuous = continuous
-        self.mining = mining
-        label_root = 'splits' if version == '' else f'splits_{version}'
+        self.label_root = 'splits' if version == '' else f'splits_{version}'
 
-        self.sat_size = [224, 224] #[320, 320]
-        self.grd_size = [224, 448] #[320, 640]
+        self.sat_size = [224, 224] # [320, 320]
+        self.grd_size = [224, 448] # [320, 640]
         self.tf_sat = transform(self.sat_size)
         self.tf_grd = transform(self.grd_size)
 
-        if same_area:
-            self.train_city_list = ['NewYork', 'Seattle', 'SanFrancisco', 'Chicago']
-            self.test_city_list = ['NewYork', 'Seattle', 'SanFrancisco', 'Chicago']
+        # full set
+        if version == 'newfull':
+            if self.same_area:
+                self.city_list = ['NewYork', 'Seattle', 'SanFrancisco', 'Chicago']
+            else:
+                if self.mode == 'train':
+                    # self.city_list = ['NewYork', 'Seattle']
+                    self.city_list = ['SanFrancisco', 'Chicago'] #! swapped split
+                else:
+                    # self.city_list = ['SanFrancisco', 'Chicago']
+                    self.city_list = ['NewYork', 'Seattle'] #! swapped split
+        # partial set
         else:
-            self.train_city_list = ['NewYork', 'Seattle']
-            self.test_city_list = ['SanFrancisco', 'Chicago']
+            if self.same_area:
+                self.city_list = ['Chicago']
+            else:
+                if self.mode == 'train':
+                    self.city_list = ['Chicago']
+                else:
+                    self.city_list = ['Chicago']
 
-        self.train_sat_list = []
-        self.train_sat_index_dict = {}
-        self.delta_unit = [0.0003280724526376747, 0.00043301140280175833]
-        idx = 0
-        # load sat list
-        for city in self.train_city_list:
-            train_sat_list_fname = os.path.join(self.root_dir, label_root, city, 'satellite_list.txt')
-            with open(train_sat_list_fname, 'r') as file:
-                for line in file.readlines():
-                    self.train_sat_list.append(os.path.join(self.root_dir, city, 'satellite', line.replace('\n', '')))
-                    self.train_sat_index_dict[line.replace('\n', '')] = idx
-                    idx += 1
-            self.logger.info(f'VIGORDataloader::__init__: load {train_sat_list_fname}: {idx}')
-        self.train_sat_list = np.array(self.train_sat_list)
-        self.train_sat_data_size = len(self.train_sat_list)
-        self.logger.info('Train sat loaded, data size:{}'.format(self.train_sat_data_size))
-
-        self.test_sat_list = []
-        self.test_sat_index_dict = {}
-        self.__cur_sat_id = 0  # for test
-        idx = 0
-        for city in self.test_city_list:
-            test_sat_list_fname = os.path.join(self.root_dir, label_root, city, 'satellite_list.txt')
-            with open(test_sat_list_fname, 'r') as file:
-                for line in file.readlines():
-                    self.test_sat_list.append(os.path.join(self.root_dir, city, 'satellite', line.replace('\n', '')))
-                    self.test_sat_index_dict[line.replace('\n', '')] = idx
-                    idx += 1
-            self.logger.info(f'VIGORDataloader::__init__: load {test_sat_list_fname}: {idx}')
-        self.test_sat_list = np.array(self.test_sat_list)
-        self.test_sat_data_size = len(self.test_sat_list)
-        self.logger.info('Test sat loaded, data size:{}'.format(self.test_sat_data_size))
-
-        self.train_list = []
-        self.train_label = []
-        self.train_sat_cover_dict = {}
-        self.train_delta = []
-        idx = 0
-        for city in self.train_city_list:
-            # load train panorama list
-            train_label_fname = os.path.join(self.root_dir, label_root, city, 'same_area_balanced_train.txt'
-            if self.same_area else 'pano_label_balanced.txt')
-            with open(train_label_fname, 'r') as file:
-                for line in file.readlines():
-                    data = np.array(line.split(' '))
-                    label = []
-                    for i in [1, 4, 7, 10]:
-                        label.append(self.train_sat_index_dict[data[i]])
-                    label = np.array(label).astype(np.int)
-                    delta = np.array([data[2:4], data[5:7], data[8:10], data[11:13]]).astype(float)
-                    self.train_list.append(os.path.join(self.root_dir, city, 'panorama', data[0]))
-                    self.train_label.append(label)
-                    self.train_delta.append(delta)
-                    if not label[0] in self.train_sat_cover_dict:
-                        self.train_sat_cover_dict[label[0]] = [idx]
-                    else:
-                        self.train_sat_cover_dict[label[0]].append(idx)
-                    idx += 1
-            self.logger.info(f'VIGORDataloader::__init__: load {train_label_fname}: {idx}')
-        self.train_data_size = len(self.train_list)
-        self.train_label = np.array(self.train_label)
-        self.train_delta = np.array(self.train_delta)
-        self.logger.info('Train grd loaded, data_size: {}'.format(self.train_data_size))
-
-        self.__cur_test_id = 0
-        self.test_list = []
-        self.test_label = []
-        self.test_sat_cover_dict = {}
-        self.test_delta = []
-        idx = 0
-        for city in self.test_city_list:
-            # load test panorama list
-            test_label_fname = os.path.join(self.root_dir, label_root, city, 'same_area_balanced_test.txt'
-            if self.same_area else 'pano_label_balanced.txt')
-            with open(test_label_fname, 'r') as file:
-                for line in file.readlines():
-                    data = np.array(line.split(' '))
-                    label = []
-                    for i in [1, 4, 7, 10]:
-                        label.append(self.test_sat_index_dict[data[i]])
-                    label = np.array(label).astype(np.int)
-                    delta = np.array([data[2:4], data[5:7], data[8:10], data[11:13]]).astype(float)
-                    self.test_list.append(os.path.join(self.root_dir, city, 'panorama', data[0]))
-                    self.test_label.append(label)
-                    self.test_delta.append(delta)
-                    if not label[0] in self.test_sat_cover_dict:
-                        self.test_sat_cover_dict[label[0]] = [idx]
-                    else:
-                        self.test_sat_cover_dict[label[0]].append(idx)
-                    idx += 1
-            self.logger.info(f'VIGORDataloader::__init__: load {test_label_fname}: {idx}')
-        self.test_data_size = len(self.test_list)
-        self.test_label = np.array(self.test_label)
-        self.test_delta = np.array(self.test_delta)
-        self.logger.info('Test grd loaded, data size: {}'.format(self.test_data_size))
-
-        self.train_sat_cover_list = list(self.train_sat_cover_dict.keys())
-
+        info_dict = self.read_info()
+        self.sat_list = info_dict['sat_list']
+        self.sat_index_dict = info_dict['sat_index_dict']
+        self.sat_list_size = info_dict['sat_list_size']
+        self.grd_list = info_dict['grd_list']
+        self.grd_sat_label = info_dict['grd_sat_label']
+        self.sat_cover_dict = info_dict['sat_cover_dict']
+        self.grd_sat_delta = info_dict['grd_sat_delta']
+        self.grd_list_size = info_dict['grd_list_size']
+        self.sat_cover_list = info_dict['sat_cover_list']
+        
         # only for analysis
         self.mean_product = 0.
         self.mean_positive_product = 0.7
         self.mean_hit = 0.5
 
-        # for mining pool
-        self.mining_pool_size = 40000
-        self.mining_save_size = 100
-        self.choice_pool = range(self.mining_save_size)
-        if self.mining:
-            self.sat_global_train = np.zeros([self.train_sat_data_size, dim])
-            self.grd_global_train = np.zeros([self.train_data_size, dim])
-            self.mining_save = np.zeros([self.train_data_size, self.mining_save_size])
-            self.mining_pool_ready = False
+
+    def read_info(self):
+        sat_list = []
+        sat_index_dict = {}
+        idx = 0
+        # load sat list
+        for city in self.city_list:
+            sat_list_fname = os.path.join(self.root_dir, self.label_root, city, 'satellite_list.txt')
+            with open(sat_list_fname, 'r') as file:
+                for line in file.readlines():
+                    sat_list.append(os.path.join(self.root_dir, city, 'satellite', line.replace('\n', '')))
+                    sat_index_dict[line.replace('\n', '')] = idx
+                    idx += 1
+            self.logger.info(f'VIGOR dataset: load {sat_list_fname}: {idx}')
+        sat_list_size = len(sat_list)
+        sat_list = np.array(sat_list)
+        self.logger.info('{} sat loaded, data size:{}'.format(self.mode, sat_list_size))
+
+        grd_list = []
+        grd_sat_label = []
+        sat_cover_dict = {}
+        grd_sat_delta = []
+        idx = 0
+        for city in self.city_list:
+            # load train panorama list
+            label_fname = os.path.join(self.root_dir, self.label_root, city, 'same_area_balanced_train.txt'
+                                       if self.same_area else 'pano_label_balanced.txt')
+            with open(label_fname, 'r') as file:
+                for line in file.readlines():
+                    data = np.array(line.split(' '))
+                    label = []
+                    for i in [1, 4, 7, 10]:
+                        label.append(sat_index_dict[data[i]])
+                    label = np.array(label).astype(np.int)
+                    delta = np.array([data[2:4], data[5:7], data[8:10], data[11:13]]).astype(float)
+                    grd_list.append(os.path.join(self.root_dir, city, 'panorama', data[0]))
+                    grd_sat_label.append(label)
+                    grd_sat_delta.append(delta)
+                    if not label[0] in sat_cover_dict:
+                        sat_cover_dict[label[0]] = [idx]
+                    else:
+                        sat_cover_dict[label[0]].append(idx)
+                    idx += 1
+            self.logger.info(f'VIGOR dataset: load {label_fname}: {idx}')
+        grd_list_size = len(grd_list)
+        grd_sat_label = np.array(grd_sat_label)
+        grd_sat_delta = np.array(grd_sat_delta)
+        self.logger.info('{} grd loaded, data_size: {}'.format(self.mode, grd_list_size))
+
+        sat_cover_list = list(sat_cover_dict.keys())
+
+        info_dict = {
+            'sat_list': sat_list,
+            'sat_index_dict': sat_index_dict,
+            'sat_list_size': sat_list_size,
+            'grd_list': grd_list,
+            'grd_sat_label': grd_sat_label,
+            'sat_cover_dict': sat_cover_dict,
+            'grd_sat_delta': grd_sat_delta,
+            'grd_list_size': grd_list_size,
+            'sat_cover_list': sat_cover_list
+        }
+        return info_dict
 
 
-    def next_batch_test_sat(self, batch_size):
-        if self.__cur_sat_id >= self.test_sat_data_size:
-            self.__cur_sat_id = 0
-            return None
-        elif self.__cur_sat_id + batch_size >= self.test_sat_data_size:
-            batch_size = self.test_sat_data_size - self.__cur_sat_id
-        batch_sat = torch.zeros([batch_size, 3, self.sat_size[0], self.sat_size[1]])
-        for i in range(batch_size):
-            img_idx = self.__cur_sat_id + i
-            batch_sat[i, :, :, :] = self.tf_sat(self.read_image(self.test_sat_list[img_idx]))
-        self.__cur_sat_id += batch_size
-        return batch_sat
-
-
-    def next_batch_test_grd(self, batch_size):
-        if self.__cur_test_id >= self.test_data_size:
-            self.__cur_test_id = 0
-            return None
-        elif self.__cur_test_id + batch_size >= self.test_data_size:
-            batch_size = self.test_data_size - self.__cur_test_id
-        batch_grd = torch.zeros([batch_size, 3, self.grd_size[0], self.grd_size[1]])
-        for i in range(batch_size):
-            img_idx = self.__cur_test_id + i
-            batch_grd[i, :, :, :] = self.tf_grd(self.read_image(self.test_list[img_idx]))
-        self.__cur_test_id += batch_size
-        return batch_grd
-
-
-    # load according to retrieval order, for offset prediction after retrieval, the retrieved one may not be positive
-    def next_batch_test_with_order(self, batch_size, order_list):
-        if self.__cur_test_id >= self.test_data_size:
-            self.__cur_test_id = 0
-            return None, None, None
-        elif self.__cur_test_id + batch_size >= self.test_data_size:
-            batch_size = self.test_data_size - self.__cur_test_id
-
-        batch_list = []
-        batch_sat = torch.zeros([batch_size, 3, self.sat_size[0], self.sat_size[1]])
-        batch_grd = torch.zeros([batch_size, 3, self.grd_size[0], self.grd_size[1]])
-        for i in range(batch_size):
-            img_idx = self.__cur_test_id + i
-            batch_list.append(img_idx)
-            batch_sat[i, :, :, :] = self.tf_sat(self.read_image(self.test_sat_list[order_list[img_idx]]))
-            batch_grd[i, :, :, :] = self.tf_grd(self.read_image(self.test_list[img_idx]))
-        self.__cur_test_id += batch_size
-        return batch_sat, batch_grd, np.array(batch_list)
-
-
-    # avoid sampling overlap images
-    def check_non_overlap(self, id_list, idx):
-        output = True
-        sat_idx = self.train_label[idx]
-        for id in id_list:
-            sat_id = self.train_label[id]
-            for i in sat_id:
-                if i in sat_idx:
-                    output = False
-                    return output
-        return output
-
-
-    def gen_idx(self):
-        # random sampling according to sat
-        return random.choice(self.train_sat_cover_dict[random.choice(self.train_sat_cover_list)])
-
-
-    def next_batch_train(self, batch_size):
-        if self.mining and self.mining_pool_ready:
+    def __getitem__(self, index):
+        try:
+            image_sat = self.read_image(self.sat_list[self.grd_sat_label[index][0]])
+            image_grd = self.read_image(self.grd_list[index])
             if self.continuous:
-                delta_list = np.ones([batch_size * 2, 2])
-                batch_sat = torch.zeros([batch_size, 3, self.sat_size[0], self.sat_size[1]])
-                batch_grd = torch.zeros([batch_size, 3, self.grd_size[0], self.grd_size[1]])
-                batch_list = []
-                for batch_idx in range(int(batch_size / 2)):
-                    while True:
-                        img_idx = self.gen_idx()
-                        if self.check_non_overlap(batch_list, img_idx): break
-                    image_sat, image_sat_semi, image_grd, delta, delta_semi = self.get_item(img_idx)
-                    batch_sat[batch_idx, :, :, :] = image_sat
-                    delta_list[batch_idx, :] = delta
-                    batch_sat[batch_idx + batch_size, :, :, :] = image_sat_semi
-                    delta_list[batch_idx + batch_size, :] = delta_semi
-                    batch_grd[batch_idx, :, :, :] = image_grd
-                    batch_list.append(img_idx)
-
-                for batch_idx in range(int(batch_size / 2)):
-                    choice_count = 0
-                    while True:
-                        if choice_count <= len(self.choice_pool):
-                            sat_id = self.mining_save[batch_list[batch_idx], -1 - random.choice(self.choice_pool)]
-                            if sat_id in self.train_sat_cover_dict:
-                                img_idx = random.choice(self.train_sat_cover_dict[sat_id])
-                            else:
-                                choice_count = choice_count + 1
-                                continue
-                        else:
-                            img_idx = self.gen_idx()
-                        choice_count = choice_count + 1
-                        if self.check_non_overlap(batch_list, img_idx):
-                            break
-                    image_sat, image_sat_semi, image_grd, delta, delta_semi = self.get_item(img_idx)
-                    batch_sat[int(batch_idx + batch_size / 2), :, :, :] = image_sat
-                    delta_list[int(batch_idx + batch_size / 2), :] = delta
-                    batch_sat[int(batch_idx + batch_size / 2 + batch_size), :, :, :] = image_sat_semi
-                    delta_list[int(batch_idx + batch_size / 2 + batch_size), :] = delta_semi
-                    batch_grd[int(batch_idx + batch_size / 2), :, :, :] = image_grd
-                    batch_list.append(img_idx)
-                return batch_sat, batch_grd, np.array(batch_list), delta_list
-            else:
-                delta_list = np.ones([batch_size, 2])
-                batch_sat = torch.zeros([batch_size, 3, self.sat_size[0], self.sat_size[1]])
-                batch_grd = torch.zeros([batch_size, 3, self.grd_size[0], self.grd_size[1]])
-                batch_list = []
-                for batch_idx in range(int(batch_size / 2)):
-                    while True:
-                        img_idx = self.gen_idx()
-                        if self.check_non_overlap(batch_list, img_idx): break
-                    image_sat, image_grd, delta = self.get_item(img_idx)
-                    batch_sat[batch_idx, :, :, :] = image_sat
-                    batch_grd[batch_idx, :, :, :] = image_grd
-                    delta_list[batch_idx, :] = delta
-                    batch_list.append(img_idx)
-                for batch_idx in range(int(batch_size / 2)):
-                    choice_count = 0
-                    while True:
-                        if choice_count <= len(self.choice_pool):
-                            sat_id = self.mining_save[batch_list[batch_idx], -1 - random.choice(self.choice_pool)]
-                            if sat_id in self.train_sat_cover_dict:
-                                img_idx = random.choice(self.train_sat_cover_dict[sat_id])
-                            else:
-                                choice_count = choice_count + 1
-                                continue
-                        else:
-                            img_idx = self.gen_idx()
-                        choice_count = choice_count + 1
-                        if self.check_non_overlap(batch_list, img_idx):
-                            break
-                    image_sat, image_grd, delta = self.get_item(img_idx)
-                    batch_sat[int(batch_idx + batch_size / 2), :, :, :] = image_sat
-                    batch_grd[int(batch_idx + batch_size / 2), :, :, :] = image_grd
-                    delta_list[int(batch_idx + batch_size / 2), :] = delta
-                    batch_list.append(img_idx)
-                return batch_sat, batch_grd, np.array(batch_list), delta_list
-
-        else:
+                randx = random.randrange(1, 4)
+                image_sat_semi = self.read_image(self.sat_list[self.grd_sat_label[index][randx]])
+        except (FileNotFoundError, OSError):
+            image_sat = Image.new('RGB', (self.sat_size[0], self.sat_size[1]))
+            image_grd = Image.new('RGB', (self.grd_size[0], self.grd_size[1]))
             if self.continuous:
-                delta_list = np.ones([batch_size * 2, 2])
-                batch_sat = torch.zeros([batch_size * 2, 3, self.sat_size[0], self.sat_size[1]])
-                batch_grd = torch.zeros([batch_size, 3, self.grd_size[0], self.grd_size[1]])
-                batch_list = []
-                for batch_idx in range(batch_size):
-                    while True:
-                        img_idx = self.gen_idx()
-                        if self.check_non_overlap(batch_list, img_idx): break
-                    image_sat, image_sat_semi, image_grd, delta, delta_semi = self.get_item(img_idx)
-                    batch_sat[batch_idx, :, :, :] = image_sat
-                    delta_list[batch_idx, :] = delta
-                    batch_sat[batch_idx + batch_size, :, :, :] = image_sat_semi
-                    delta_list[batch_idx + batch_size, :] = delta_semi
-                    batch_grd[batch_idx, :, :, :] = image_grd
-                    batch_list.append(img_idx)
-                return batch_sat, batch_grd, np.array(batch_list), delta_list
-            else:
-                delta_list = np.ones([batch_size, 2])
-                batch_sat = torch.zeros([batch_size, 3, self.sat_size[0], self.sat_size[1]])
-                batch_grd = torch.zeros([batch_size, 3, self.grd_size[0], self.grd_size[1]])
-                batch_list = []
-                for batch_idx in range(batch_size):
-                    while True:
-                        img_idx = self.gen_idx()
-                        if self.check_non_overlap(batch_list, img_idx): break
-                    image_sat, image_grd, delta = self.get_item(img_idx)
-                    batch_sat[batch_idx, :, :, :] = image_sat
-                    batch_grd[batch_idx, :, :, :] = image_grd
-                    delta_list[batch_idx, :] = delta
-                    batch_list.append(img_idx)
-                return batch_sat, batch_grd, np.array(batch_list), delta_list
-
-
-    def get_item(self, img_idx):
-        image_sat = self.tf_sat(self.read_image(self.train_sat_list[self.train_label[img_idx][0]]))
-        image_grd = self.tf_grd(self.read_image(self.train_list[img_idx]))
-
+                image_sat_semi = Image.new('RGB', (self.sat_size[0], self.sat_size[1]))
+        image_sat = self.tf_sat(image_sat)
+        image_grd = self.tf_grd(image_grd)
         if self.continuous:
-            randx = random.randrange(1, 4)
-            image_sat_semi = self.tf_sat(self.read_image(self.train_sat_list[self.train_label[img_idx][randx]]))
-            return image_sat, image_sat_semi, image_grd, self.train_delta[img_idx, 0], self.train_delta[img_idx, randx]
-
-        return image_sat, image_grd, self.train_delta[img_idx, 0]
+            image_sat_semi = self.tf_sat(image_sat_semi)
+            return image_sat, image_sat_semi, image_grd, index, self.grd_sat_delta[index, 0], self.grd_sat_delta[index, randx]
+        return image_sat, image_grd, index, self.grd_sat_delta[index, 0]
 
 
-    def cal_ranking_train_limited(self):
-        assert self.mining_pool_size < self.train_sat_data_size
-        mining_pool = np.array(random.sample(range(self.train_sat_data_size), self.mining_pool_size))
-        product_train = np.matmul(self.grd_global_train, np.transpose(self.sat_global_train[mining_pool, :]))
-        product_index = np.argsort(product_train, axis=1)
-
-        for i in range(product_train.shape[0]):
-            self.mining_save[i, :] = mining_pool[product_index[i, -self.mining_save_size:]]
-
-
-    def reset_iter(self):
-        self.__cur_test_id = 0
-        self.__cur_sat_id = 0
+    def __len__(self):
+        return self.grd_list_size
 
 
     def read_image(self, path):
@@ -355,3 +160,46 @@ class VIGORDataloader():
         # img = Image.fromarray(img.astype(np.uint8))
         img = Image.open(path).convert("RGB")
         return img
+
+
+class NonOverlapBatchSampler(BatchSampler):
+    def __init__(self, sampler, label, batch_size, drop_last):
+        super().__init__(sampler, batch_size, drop_last)
+        self.label = label
+        self.cache = []
+
+    def __iter__(self):
+        batch = []
+        for idx in self.sampler:
+            if self.check_non_overlap(batch, idx):
+                batch.append(idx)
+            else:
+                for i in self.cache:
+                    if self.check_non_overlap(batch, i):
+                        batch.append(i)
+                        self.cache.remove(i)
+                        break
+                self.cache.append(idx)
+            if len(batch) == self.batch_size:
+                yield batch
+                batch = []
+        for idx in self.cache.copy():
+            if self.check_non_overlap(batch, idx):
+                batch.append(idx)
+                self.cache.remove(idx)
+                if len(batch) == self.batch_size:
+                    yield batch
+                    batch = []
+        if len(batch) > 1 and not self.drop_last: # > 1 to ensure there's at least one triplet
+            yield batch
+
+    def check_non_overlap(self, id_list, idx):
+        output = True
+        sat_idx = self.label[idx]
+        for id in id_list:
+            sat_id = self.label[id]
+            for i in sat_id:
+                if i in sat_idx:
+                    output = False
+                    return output
+        return output

@@ -87,3 +87,19 @@ class CVMModel(nn.Module):
         # visualize.visualize_assets(desc_gr, desc_sa, mode='descriptor')
 
         return desc_gr, desc_sa
+
+
+class CVMModelv2(nn.Module):
+    def __init__(self, backbone, pool, pretrained):
+        super(CVMModelv2, self).__init__()
+        self.features_gr = get_backbone(backbone, pretrained)
+        self.features_sa = get_backbone(backbone, pretrained)
+        self.pool = get_pool(pool, norm=True)
+
+    def forward(self, x1, x2):
+        fmp_gr = self.features_gr(x1)
+        desc_gr = self.pool(fmp_gr)
+        fmp_sa = self.features_sa(x2)
+        desc_sa = self.pool(fmp_sa)
+
+        return desc_gr, desc_sa

@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision.models import resnet18, vgg16
+from torchvision.models import resnet50, vgg16
 from .vit import ViT
 
 
@@ -32,36 +32,42 @@ def _initialize_weights(m):
         nn.init.constant_(m.bias, 0)
 
 
-def get_backbone(name):
-    if name == 'resnet18':
-        backbone = resnet18(pretrained=True)
+def get_backbone(name, pretrained):
+    if name == 'resnet50':
+        backbone = resnet50(pretrained=pretrained)
+        print(f'Load ImageNet pretrained weights to backbone: {pretrained}')
         # backbone = resnet18(pretrained=True, norm_layer=lambda x : nn.BatchNorm2d(x, track_running_stats=False))
         # backbone = resnet18(pretrained=True, norm_layer=lambda x : nn.Identity())
         # backbone = resnet18(pretrained=True, norm_layer=lambda x : LayerNorm())
-        layers = list(backbone.children())[:-2]
+        backbone.fc = nn.Identity()
         # NOTE optionally if we have dim less than 224, don't half the size at conv_1
         # layers[0].stride = 1
-        layers[0] = nn.Conv2d(3, 64, kernel_size=7, stride=1, padding=3, bias=False)
-        backbone = nn.Sequential(*layers)
-        backbone.output_dim = 512
+        # layers[0] = nn.Conv2d(3, 64, kernel_size=7, stride=1, padding=3, bias=False)
+        # backbone = nn.Sequential(*layers)
+        backbone.output_dim = 2048
     elif name == 'vgg16':
         # backbone = eval(f"{name}()")
-        backbone = vgg16(pretrained=True)
+        backbone = vgg16(pretrained=pretrained)
+        print(f'Load ImageNet pretrained weights to backbone: {pretrained}')
         # drop the last two layers: ReLU and MaxPool2d
         layers = list(backbone.features.children())
         # layers[-1] = nn.ReLU(inplace=False)
         # layers = [x for x in layers if not isinstance(x, nn.ReLU)]
 
-        # optionally freeze part of the backbone
+        # NOTE optionally freeze part of the backbone
         # only train conv5_1, conv5_2, and conv5_3 (leave rest same as Imagenet trained weights)
-        # for layer in layers[:-5]:
+        # for layer in layers[:-7]:
         #     for p in layer.parameters():
         #         p.requires_grad = False
+        # print(f'Freeze layers until the last three conv layers')
+
+        # NOTE change last three conv layers
         # layers[-5] = nn.Conv2d(512, 256, kernel_size=3, stride=(1, 1), padding=1)
         # layers[-3] = nn.Conv2d(256, 64, kernel_size=3, stride=(1, 1), padding=1)
         # layers[-1] = nn.Conv2d(64, 16, kernel_size=3, stride=1, padding=1)
         # for layer in layers[-5:]:
         #     _initialize_weights(layer)
+        
         backbone = nn.Sequential(*layers)
         backbone.output_dim = 512
     elif name == 'vit':
@@ -105,9 +111,20 @@ def get_pool(name, norm=True):
         #         nn.ReLU(),
         #         nn.Dropout(),
         #         nn.Linear(4096, 4096)]
-        pool = [nn.AdaptiveAvgPool2d((7, 7)),
+        # NOTE use vgg16
+        pool = [nn.AdaptiveAvgPool2d((1, 1)),
                 nn.Flatten(start_dim=1, end_dim=-1),
-                nn.Linear(25088, 4096)]
+                nn.Linear(512, 4096)]
+        # NOTE use vgg16 with avgpool 1x1
+        # pool = [nn.AdaptiveAvgPool2d((1, 1)),
+        #         nn.Flatten(start_dim=1, end_dim=-1),
+        #         nn.Linear(512, 4096)]
+        # NOTE contrastive learning downloaded resnet50 model
+        # pool = [nn.Linear(2048, 4096)]
+
+        # pool[-1].fc.weight.data.normal_(mean=0.0, std=0.01)
+        # pool[-1].fc.bias.data.zero_()
+
     else:
         raise NotImplementedError
     if norm: 
@@ -117,16 +134,13 @@ def get_pool(name, norm=True):
 
 def get_model(model_cfg):
     from .simsiam import SimSiam, SimSiamv3
-    from .safa import CVMModel
+    from .safa import CVMModel, CVMModelv2
     if model_cfg.name == 'simsiam':
-        if not model_cfg.shared:
-            model = SimSiam(model_cfg.backbone, model_cfg.pool)
-        else:
-            model = SimSiamv3(model_cfg.backbone, model_cfg.pool)
+        model = SimSiam(model_cfg.backbone, model_cfg.pool)
     elif model_cfg.name == 'cvm':
-        model = CVMModel(model_cfg.backbone, model_cfg.pool)
+        # model = CVMModel(model_cfg.backbone, model_cfg.pool)
+        model = CVMModelv2(model_cfg.backbone, model_cfg.pool, model_cfg.imagenet)
     else:
         raise NotImplementedError
 
     return model
-

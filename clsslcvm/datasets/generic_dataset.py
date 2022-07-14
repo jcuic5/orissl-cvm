@@ -6,18 +6,18 @@ import numpy as np
 
 
 class ImagesFromList(Dataset):
-    def __init__(self, root_dir, images, transform, category='ground'):
-        self.root_dir = root_dir
-        self.transform = transform
+    def __init__(self, img_paths, img_size, transform):
+        self.img_paths = img_paths
+        self.img_size = img_size
+        self.transform = transform(self.img_size)
 
     def __len__(self):
-        return len(self.images)
+        return len(self.img_paths)
 
     def __getitem__(self, idx):
-        try: img = self.transform(Image.open(join(self.path, self.images[idx])))
-        except: return None
+        try:
+            img = self.transform(Image.open(self.img_paths[idx]).convert("RGB"))
+        except (FileNotFoundError, OSError):
+            img = self.transform(Image.new('RGB', (self.img_size[0], self.img_size[1])))
+            
         return img, idx
-
-    @staticmethod
-    def collate_fn(batch):
-        return data.dataloader.default_collate(batch) if None not in batch else None

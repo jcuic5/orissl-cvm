@@ -1,0 +1,161 @@
+2022-07-14 20:53:00 | INFO     | __main__:48 - **********************Config file**********************
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:150 - 
+cfg.dataset = edict()
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.dataset.name: vigor
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.dataset.dataset_root_dir: data/VIGOR
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.dataset.version: newfull
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.dataset.n_workers: 32
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:150 - 
+cfg.model = edict()
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.model.name: cvm
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.model.backbone: vgg16
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.model.pool: fc
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.model.imagenet: True
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:150 - 
+cfg.train = edict()
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.seed: 42
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.batch_size: 96
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.n_epochs: 150
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.start_epoch: 0
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.eval_every: 3
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.patience: 0
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.save_every_epoch: True
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.threads: 2
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.gpu_ids: 0
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.n_gpu: 1
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.slurm: True
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.save_path: work_dirs
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.resume_path: 
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.load_path: 
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.load_sep_branch: False
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.load_sep_branch_single: 
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.load_only_backbone: False
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.train_as_val: False
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.only_val: False
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.start_with_val: True
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.grad_cam: False
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.check_align_and_uniform: True
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.train.extra_identifier: 
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:150 - 
+cfg.hyperparams = edict()
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.optim: adam
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.weight_decay: 0.001
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.momentum: 0.9
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.lr: 0.0001
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.lr_step: 5
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.lr_gamma: 0.5
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.hyperparams.margin: 0.1
+2022-07-14 20:53:00 | INFO     | clsslcvm.tools:153 - cfg.identifier: cvm_vgg16_fc_vigor_newfull
+2022-07-14 20:53:00 | INFO     | __main__:50 - **********************Settings**********************
+2022-07-14 20:53:00 | INFO     | __main__:63 - torch.cuda.device_count(): 1
+2022-07-14 20:53:00 | INFO     | __main__:64 - torch.cuda.current_device(): 0
+2022-07-14 20:53:00 | INFO     | __main__:73 - ===> Building model
+2022-07-14 20:53:28 | INFO     | __main__:96 - CVMModelv2(
+  (features_gr): Sequential(
+    (0): Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (1): ReLU(inplace=True)
+    (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (3): ReLU(inplace=True)
+    (4): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (5): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (6): ReLU(inplace=True)
+    (7): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (8): ReLU(inplace=True)
+    (9): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (10): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (11): ReLU(inplace=True)
+    (12): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (13): ReLU(inplace=True)
+    (14): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (15): ReLU(inplace=True)
+    (16): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (17): Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (18): ReLU(inplace=True)
+    (19): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (20): ReLU(inplace=True)
+    (21): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (22): ReLU(inplace=True)
+    (23): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (24): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (25): ReLU(inplace=True)
+    (26): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (27): ReLU(inplace=True)
+    (28): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (29): ReLU(inplace=True)
+    (30): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+  )
+  (features_sa): Sequential(
+    (0): Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (1): ReLU(inplace=True)
+    (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (3): ReLU(inplace=True)
+    (4): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (5): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (6): ReLU(inplace=True)
+    (7): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (8): ReLU(inplace=True)
+    (9): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (10): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (11): ReLU(inplace=True)
+    (12): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (13): ReLU(inplace=True)
+    (14): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (15): ReLU(inplace=True)
+    (16): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (17): Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (18): ReLU(inplace=True)
+    (19): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (20): ReLU(inplace=True)
+    (21): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (22): ReLU(inplace=True)
+    (23): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (24): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (25): ReLU(inplace=True)
+    (26): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (27): ReLU(inplace=True)
+    (28): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (29): ReLU(inplace=True)
+    (30): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+  )
+  (pool): Sequential(
+    (0): AdaptiveAvgPool2d(output_size=(1, 1))
+    (1): Flatten(start_dim=1, end_dim=-1)
+    (2): Linear(in_features=512, out_features=4096, bias=True)
+    (3): L2Norm()
+  )
+)
+2022-07-14 20:53:28 | INFO     | __main__:108 - ===> Loading dataset(s)
+2022-07-14 20:53:28 | INFO     | clsslcvm.datasets.vigor_dataset:79 - VIGOR dataset: load data/VIGOR/splits_newfull/SanFrancisco/satellite_list.txt: 24255
+2022-07-14 20:53:28 | INFO     | clsslcvm.datasets.vigor_dataset:79 - VIGOR dataset: load data/VIGOR/splits_newfull/Chicago/satellite_list.txt: 46563
+2022-07-14 20:53:28 | INFO     | clsslcvm.datasets.vigor_dataset:82 - train sat loaded, data size:46563
+2022-07-14 20:53:29 | INFO     | clsslcvm.datasets.vigor_dataset:109 - VIGOR dataset: load data/VIGOR/splits_newfull/SanFrancisco/pano_label_balanced.txt: 28215
+2022-07-14 20:53:29 | INFO     | clsslcvm.datasets.vigor_dataset:109 - VIGOR dataset: load data/VIGOR/splits_newfull/Chicago/pano_label_balanced.txt: 53694
+2022-07-14 20:53:29 | INFO     | clsslcvm.datasets.vigor_dataset:113 - train grd loaded, data_size: 53694
+2022-07-14 20:53:29 | INFO     | clsslcvm.datasets.vigor_dataset:79 - VIGOR dataset: load data/VIGOR/splits_newfull/NewYork/satellite_list.txt: 23279
+2022-07-14 20:53:29 | INFO     | clsslcvm.datasets.vigor_dataset:79 - VIGOR dataset: load data/VIGOR/splits_newfull/Seattle/satellite_list.txt: 44055
+2022-07-14 20:53:29 | INFO     | clsslcvm.datasets.vigor_dataset:82 - val sat loaded, data size:44055
+2022-07-14 20:53:30 | INFO     | clsslcvm.datasets.vigor_dataset:109 - VIGOR dataset: load data/VIGOR/splits_newfull/NewYork/pano_label_balanced.txt: 27769
+2022-07-14 20:53:31 | INFO     | clsslcvm.datasets.vigor_dataset:109 - VIGOR dataset: load data/VIGOR/splits_newfull/Seattle/pano_label_balanced.txt: 51520
+2022-07-14 20:53:31 | INFO     | clsslcvm.datasets.vigor_dataset:113 - val grd loaded, data_size: 51520
+2022-07-14 20:53:31 | INFO     | clsslcvm.tools.val_cvm:103 - ===> Extracting Features
+2022-07-14 20:53:31 | INFO     | clsslcvm.tools.val_cvm:108 - ===> Extracting Features for val ground queries
+2022-07-14 20:54:29 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[0](107/537): indices 10176 to 10271 extracted
+2022-07-14 20:55:12 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[0](214/537): indices 20448 to 20543 extracted
+2022-07-14 20:55:55 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[0](321/537): indices 30720 to 30815 extracted
+2022-07-14 20:56:38 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[0](428/537): indices 40992 to 41087 extracted
+2022-07-14 20:57:21 | INFO     | clsslcvm.tools.val_cvm:117 - Epoch[0](535/537): indices 51264 to 51359 extracted
+2022-07-14 20:57:22 | INFO     | clsslcvm.tools.val_cvm:120 - ===> Extracting Features for val satellite queries
+2022-07-14 20:57:47 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[0](91/459): indices 8640 to 8735 extracted
+2022-07-14 20:58:06 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[0](182/459): indices 17376 to 17471 extracted
+2022-07-14 20:58:24 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[0](273/459): indices 26112 to 26207 extracted
+2022-07-14 20:58:43 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[0](364/459): indices 34848 to 34943 extracted
+2022-07-14 20:59:02 | INFO     | clsslcvm.tools.val_cvm:129 - Epoch[0](455/459): indices 43584 to 43679 extracted
+2022-07-14 20:59:03 | INFO     | clsslcvm.tools.val_cvm:13 - ===> Compute accuracy
+2022-07-14 20:59:26 | INFO     | clsslcvm.tools.val_cvm:48 - ===> Evaluation epoch 0: accuracy = 3.1% , top1: 0.0%, top5: 0.0%, hit_rate: 0.0%
+2022-07-14 20:59:30 | INFO     | __main__:165 - Allocated: 122.03 MB, Cached: 15.32 GB
+2022-07-14 20:59:30 | INFO     | __main__:168 - **********************Start training**********************
+2022-07-14 21:00:02 | INFO     | clsslcvm.tools.train_cvm_epoch:78 - Allocated: 494.57 MB, Cached: 23.20 GB
+2022-07-14 21:00:02 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[1](0/560): Loss: 0.7788, Align loss: 0.0110, Uniform loss: -1.0316
+2022-07-14 21:03:56 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[1](112/560): Loss: 0.0912, Align loss: 0.0056, Uniform loss: -1.9993
+2022-07-14 21:07:48 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[1](224/560): Loss: 0.0708, Align loss: 0.0062, Uniform loss: -2.1451
+2022-07-14 21:11:40 | INFO     | clsslcvm.tools.train_cvm_epoch:84 - Epoch[1](336/560): Loss: 0.0357, Align loss: 0.0063, Uniform loss: -2.6628
